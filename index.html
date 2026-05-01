@@ -25,8 +25,8 @@
 
     /* ── TOP BAR ── */
     .topbar { display:flex; align-items:center; gap:12px; padding:8px 18px; background:var(--bg-panel); border-bottom:1px solid var(--border); flex-shrink:0; min-height:52px; flex-wrap:wrap; }
-    .brand-name { font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--accent); letter-spacing:-.5px; }
-    .brand-sub  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+    .brand-name { font-family:var(--font-mono); font-size:17px; font-weight:700; color:var(--accent); letter-spacing:-.5px; }
+    .brand-sub  { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
     .vdiv { width:1px; height:26px; background:var(--border); flex-shrink:0; }
 
     .demo-badge { font-family:var(--font-mono); font-size:10px; font-weight:700; color:#000; background:var(--demo-col); padding:2px 8px; border-radius:4px; letter-spacing:.8px; display:none; flex-shrink:0; animation:demoPulse 2.4s ease-in-out infinite; }
@@ -35,10 +35,10 @@
 
     .token-stats { display:flex; align-items:center; gap:10px; flex:1; justify-content:center; }
     .stat-block  { display:flex; flex-direction:column; align-items:center; gap:0; }
-    .stat-label  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; white-space:nowrap; }
-    .stat-value  { font-family:var(--font-mono); font-size:17px; font-weight:700; color:var(--accent); min-width:55px; text-align:center; }
+    .stat-label  { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; white-space:nowrap; }
+    .stat-value  { font-family:var(--font-mono); font-size:22px; font-weight:700; color:var(--accent); min-width:65px; text-align:center; }
     .stat-value.sv { color:var(--save-col); }
-    .stat-sub    { font-family:var(--font-mono); font-size:8px; color:var(--text-muted); text-align:center; white-space:nowrap; }
+    .stat-sub    { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); text-align:center; white-space:nowrap; }
     @keyframes numFlash   { 0%{color:#fff;text-shadow:0 0 14px var(--accent)}  100%{color:var(--accent);text-shadow:none} }
     @keyframes numFlashSv { 0%{color:#fff;text-shadow:0 0 14px var(--save-col)} 100%{color:var(--save-col);text-shadow:none} }
     .stat-value.flash   { animation:numFlash   .7s ease-out; }
@@ -51,7 +51,7 @@
     /* ── STRATEGY BAR ── */
     .stratbar { display:flex; align-items:center; gap:10px; padding:5px 18px; background:#090d1c; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
     .spills { display:flex; gap:3px; flex-wrap:wrap; }
-    .spill  { font-family:var(--font-mono); font-size:11px; padding:3px 11px; border-radius:12px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; transition:all .18s; white-space:nowrap; }
+    .spill  { font-family:var(--font-mono); font-size:13px; padding:4px 13px; border-radius:12px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; transition:all .18s; white-space:nowrap; }
     .spill:hover  { border-color:var(--border-bright); color:var(--text-secondary); }
     .spill.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
     .sw-toggle { display:none; align-items:center; gap:7px; padding:3px 10px; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; cursor:pointer; user-select:none; flex-shrink:0; }
@@ -69,20 +69,20 @@
       padding:6px 18px; background:#060a14; border-bottom:1px solid var(--border);
       display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; flex-shrink:0;
     }
-    .si-name { font-family:var(--font-mono); font-size:9px; font-weight:700; color:var(--accent); letter-spacing:1px; text-transform:uppercase; flex-shrink:0; }
+    .si-name { font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--accent); letter-spacing:1px; text-transform:uppercase; flex-shrink:0; }
     .si-dash  { color:var(--border-bright); flex-shrink:0; }
-    .si-how   { font-family:var(--font-mono); font-size:9px; color:var(--text-secondary); flex:1; min-width:200px; line-height:1.5; }
+    .si-how   { font-family:var(--font-mono); font-size:11px; color:var(--text-secondary); flex:1; min-width:200px; line-height:1.6; }
     .si-badges { display:flex; gap:8px; flex-shrink:0; }
-    .si-pro   { font-family:var(--font-mono); font-size:9px; color:var(--save-col); }
-    .si-con   { font-family:var(--font-mono); font-size:9px; color:#f97316; }
+    .si-pro   { font-family:var(--font-mono); font-size:11px; color:var(--save-col); }
+    .si-con   { font-family:var(--font-mono); font-size:11px; color:#f97316; }
 
     /* ── SETTINGS PANEL ── */
     .settings-panel { position:fixed; top:96px; right:18px; width:300px; background:var(--bg-panel); border:1px solid var(--border-bright); border-radius:var(--rl); padding:16px; z-index:1000; box-shadow:0 12px 40px rgba(0,0,0,.6); display:none; }
     .settings-panel.open { display:block; }
     .s-heading { font-family:var(--font-mono); font-size:11px; color:var(--accent); letter-spacing:1px; text-transform:uppercase; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px; }
     .srow { margin-bottom:11px; }
-    .slabel { display:block; font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); margin-bottom:4px; letter-spacing:.5px; text-transform:uppercase; }
-    .sinput { width:100%; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); padding:6px 10px; border-radius:var(--r); font-family:var(--font-mono); font-size:12px; outline:none; transition:border-color .2s; }
+    .slabel { display:block; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); margin-bottom:4px; letter-spacing:.5px; text-transform:uppercase; }
+    .sinput { width:100%; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); padding:6px 10px; border-radius:var(--r); font-family:var(--font-mono); font-size:13px; outline:none; transition:border-color .2s; }
     .sinput:focus { border-color:var(--accent); }
     .slr { display:flex; align-items:center; gap:8px; }
     .slr input[type="range"] { flex:1; accent-color:var(--accent); cursor:pointer; }
@@ -106,50 +106,50 @@
     .memory-panel { width:270px; flex-shrink:0; background:var(--bg-panel); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
     .mem-hdr { padding:10px 13px 8px; border-bottom:1px solid var(--border); flex-shrink:0; }
     .mem-hdr-row { display:flex; align-items:center; justify-content:space-between; }
-    .mem-title    { font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1.2px; }
-    .mem-count    { font-family:var(--font-mono); font-size:9px; font-weight:700; background:var(--accent); color:var(--bg-deep); padding:1px 6px; border-radius:8px; }
-    .mem-explain  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); margin-top:4px; line-height:1.6; }
+    .mem-title    { font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1.2px; }
+    .mem-count    { font-family:var(--font-mono); font-size:11px; font-weight:700; background:var(--accent); color:var(--bg-deep); padding:1px 7px; border-radius:8px; }
+    .mem-explain  { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-top:4px; line-height:1.6; }
     .mem-list  { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
     .mem-list::-webkit-scrollbar { width:3px; }
     .mem-list::-webkit-scrollbar-thumb { background:var(--border-bright); border-radius:2px; }
-    .mem-empty { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); text-align:center; padding:20px 10px; border:1px dashed var(--border); border-radius:var(--r); line-height:1.8; }
+    .mem-empty { font-family:var(--font-mono); font-size:12px; color:var(--text-muted); text-align:center; padding:20px 10px; border:1px dashed var(--border); border-radius:var(--r); line-height:1.8; }
 
     /* Sliding window chunk card */
     .mem-card { background:var(--bg-card); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:var(--r); padding:8px 10px; animation:slideIn .35s cubic-bezier(.16,1,.3,1); }
     @keyframes slideIn { from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:translateX(0)} }
     .mc-hdr  { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
-    .mc-lbl  { font-family:var(--font-mono); font-size:9px; font-weight:700; color:var(--accent); text-transform:uppercase; }
-    .mc-tok  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); }
-    .mc-body { font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); line-height:1.6; word-break:break-word; }
+    .mc-lbl  { font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; }
+    .mc-tok  { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); }
+    .mc-body { font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); line-height:1.6; word-break:break-word; }
 
     /* Entity store */
     .ent-tags { display:flex; flex-wrap:wrap; gap:3px; padding:4px; }
-    .etag { display:inline-flex; align-items:baseline; gap:3px; font-family:var(--font-mono); font-size:9px; padding:2px 6px; border-radius:3px; line-height:1.5; max-width:100%; word-break:break-word; animation:slideIn .25s ease-out; }
-    .etag-type { font-weight:700; font-size:8px; opacity:.85; }
+    .etag { display:inline-flex; align-items:baseline; gap:3px; font-family:var(--font-mono); font-size:11px; padding:3px 8px; border-radius:3px; line-height:1.5; max-width:100%; word-break:break-word; animation:slideIn .25s ease-out; }
+    .etag-type { font-weight:700; font-size:10px; opacity:.85; }
 
     /* RAG archive */
     .arch-msg { background:var(--bg-card); border:1px solid var(--border); border-left:3px solid transparent; border-radius:var(--r); padding:6px 8px; transition:border-color .3s,opacity .3s; animation:slideIn .2s ease-out; }
     .arch-msg.retrieved     { border-left-color:var(--accent); }
     .arch-msg.not-retrieved { opacity:.3; }
-    .arch-role    { font-family:var(--font-mono); font-size:8px; color:var(--text-muted); text-transform:uppercase; display:flex; justify-content:space-between; margin-bottom:2px; }
+    .arch-role    { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); text-transform:uppercase; display:flex; justify-content:space-between; margin-bottom:2px; }
     .arch-badge   { color:var(--accent); font-weight:700; }
-    .arch-preview { font-family:var(--font-mono); font-size:9px; color:var(--text-secondary); line-height:1.5; word-break:break-word; }
+    .arch-preview { font-family:var(--font-mono); font-size:11px; color:var(--text-secondary); line-height:1.5; word-break:break-word; }
 
     /* Hierarchical */
     .hier-card { border-radius:var(--r); padding:8px 10px; animation:slideIn .35s cubic-bezier(.16,1,.3,1); margin-bottom:1px; }
     .hier-l1   { background:var(--bg-card); border:1px solid var(--border); border-left:3px solid var(--accent); }
     .hier-l2   { background:rgba(245,158,11,.05); border:1px solid rgba(245,158,11,.2); border-left:3px solid var(--demo-col); }
-    .hier-badge { font-family:var(--font-mono); font-size:9px; font-weight:700; text-transform:uppercase; display:flex; justify-content:space-between; margin-bottom:4px; }
+    .hier-badge { font-family:var(--font-mono); font-size:11px; font-weight:700; text-transform:uppercase; display:flex; justify-content:space-between; margin-bottom:4px; }
     .hier-l1 .hier-badge { color:var(--accent); }
     .hier-l2 .hier-badge { color:var(--demo-col); }
-    .hier-covers { font-size:8px; font-weight:400; color:var(--text-muted); }
-    .hier-body   { font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); line-height:1.6; word-break:break-word; }
+    .hier-covers { font-size:10px; font-weight:400; color:var(--text-muted); }
+    .hier-body   { font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); line-height:1.6; word-break:break-word; }
 
     /* Naive panel */
     .naive-stat { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r); padding:12px; text-align:center; margin-bottom:6px; }
     .naive-num  { font-family:var(--font-mono); font-size:26px; font-weight:700; color:var(--err-txt); }
-    .naive-lbl  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); margin-top:2px; }
-    .naive-warn { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-align:center; padding:9px 10px; line-height:1.8; border:1px dashed var(--err-bdr); border-radius:var(--r); }
+    .naive-lbl  { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-top:2px; }
+    .naive-warn { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); text-align:center; padding:9px 10px; line-height:1.8; border:1px dashed var(--err-bdr); border-radius:var(--r); }
 
     /* ── CHAT AREA ── */
     .chat-area { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
@@ -158,9 +158,9 @@
     .messages::-webkit-scrollbar-thumb { background:var(--border-bright); border-radius:2px; }
 
     .welcome { margin:auto; text-align:center; padding:26px 20px; max-width:460px; }
-    .welcome-title { font-family:var(--font-mono); font-size:19px; color:var(--accent); margin-bottom:8px; }
-    .welcome-body  { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); line-height:2.1; }
-    .welcome-hint  { margin-top:12px; padding:9px 13px; background:var(--demo-dim); border:1px solid rgba(245,158,11,.2); border-radius:var(--r); font-family:var(--font-mono); font-size:10px; color:var(--demo-col); line-height:1.9; }
+    .welcome-title { font-family:var(--font-mono); font-size:23px; color:var(--accent); margin-bottom:8px; }
+    .welcome-body  { font-family:var(--font-mono); font-size:13px; color:var(--text-muted); line-height:2.1; }
+    .welcome-hint  { margin-top:12px; padding:9px 13px; background:var(--demo-dim); border:1px solid rgba(245,158,11,.2); border-radius:var(--r); font-family:var(--font-mono); font-size:12px; color:var(--demo-col); line-height:1.9; }
 
     /* Chat bubbles */
     .msg { display:flex; flex-direction:column; gap:3px; max-width:82%; animation:msgIn .18s ease-out; }
@@ -169,8 +169,8 @@
     .msg.assistant { align-self:flex-start; align-items:flex-start; }
     .msg.system    { align-self:center; align-items:center; max-width:95%; }
     .msg.info      { align-self:center; align-items:center; max-width:95%; }
-    .msg-lbl { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
-    .msg-bubble { padding:9px 13px; border-radius:var(--rl); font-size:14px; line-height:1.65; word-break:break-word; white-space:pre-wrap; }
+    .msg-lbl { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+    .msg-bubble { padding:10px 15px; border-radius:var(--rl); font-size:15px; line-height:1.7; word-break:break-word; white-space:pre-wrap; }
     .msg.user .msg-bubble      { background:var(--user-bg); border:1px solid var(--user-bdr); border-bottom-right-radius:4px; color:#cce0ff; }
     .msg.assistant .msg-bubble { background:var(--asst-bg); border:1px solid var(--asst-bdr); border-bottom-left-radius:4px; }
     .msg.system .msg-bubble    { background:var(--err-bg); border:1px solid var(--err-bdr); color:var(--err-txt); font-family:var(--font-mono); font-size:12px; }
@@ -186,11 +186,11 @@
     .event-bubble.rag-event  { background:rgba(79,142,247,0.05); border-color:rgba(79,142,247,0.2); border-left-color:var(--blue); }
     .event-bubble.hier-event { background:rgba(245,158,11,0.05); border-color:rgba(245,158,11,0.2); border-left-color:var(--demo-col); }
     .event-bubble.naive-event{ background:rgba(252,165,165,0.04); border-color:rgba(252,165,165,0.18); border-left-color:var(--err-txt); }
-    .ev-title { font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--accent); letter-spacing:.5px; margin-bottom:6px; }
+    .ev-title { font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--accent); letter-spacing:.5px; margin-bottom:6px; }
     .event-bubble.rag-event  .ev-title { color:var(--blue); }
     .event-bubble.hier-event .ev-title { color:var(--demo-col); }
     .event-bubble.naive-event .ev-title{ color:var(--err-txt); }
-    .ev-body { font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); line-height:1.75; white-space:pre-wrap; }
+    .ev-body { font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); line-height:1.8; white-space:pre-wrap; }
 
     /* Typing indicator */
     .msg.loading .msg-bubble { background:var(--asst-bg); border:1px solid var(--asst-bdr); border-bottom-left-radius:4px; display:flex; align-items:center; gap:5px; padding:11px 14px; }
@@ -200,7 +200,7 @@
 
     /* Window bar */
     .win-bar-wrap  { padding:4px 16px; background:rgba(0,212,170,.03); border-top:1px solid rgba(0,212,170,.07); display:flex; align-items:center; gap:9px; }
-    .win-bar-lbl   { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); white-space:nowrap; flex-shrink:0; }
+    .win-bar-lbl   { font-family:var(--font-mono); font-size:12px; color:var(--text-muted); white-space:nowrap; flex-shrink:0; }
     .win-bar-track { flex:1; height:3px; background:var(--bg-input); border-radius:2px; overflow:hidden; }
     .win-bar-fill  { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--accent),var(--blue)); transition:width .4s cubic-bezier(.4,0,.2,1); }
 
@@ -323,7 +323,7 @@
   </div>
   <div class="srow">
     <label class="slabel">Model</label>
-    <div class="model-tag">claude-sonnet-4-5</div>
+    <div class="model-tag">claude-sonnet-4-20250514</div>
   </div>
 </div>
 
@@ -383,7 +383,7 @@
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════
-const MODEL    = 'claude-sonnet-4-5';
+const MODEL    = 'claude-sonnet-4-20250514';
 const ENDPOINT = 'https://api.anthropic.com/v1/messages';
 const SYS_MAIN = `You are a helpful assistant. You may receive a compressed summary of earlier context. Treat it as accurate prior context.`;
 const STOP = new Set(['this','that','with','from','have','what','your','their','they','were','been','will','would','could','should','about','which','there','when','where','these','those','them','just','also','very','more','some','than','then','into','over','after','before','make','here','want']);
@@ -551,7 +551,7 @@ Note: The $4,000 figure was mentioned in our second message — which has long s
 // tokOut (response size) is the same for all strategies — it's just Claude's reply.
 const DEMO_TOKENS = {
   naive:   [200, 450, 750, 1100, 1400, 1750, 2100, 2450], // session total: ~10,200
-  sliding: [200, 420, 680,  820,  590,  640,  690,  480], // compression fires at turn 4 and 7
+  sliding: [200, 420, 680,  820,  590,  640,  690,  480], // with demo defaults (window=4, threshold=1) compression fires from turn 3 onwards
   entity:  [200, 290, 340,  360,  330,  340,  350,  280], // tiny entity list stays flat
   rag:     [200, 320, 280,  310,  260,  290,  300,  240], // only retrieves 2-3 relevant chunks
   hier:    [200, 410, 570,  540,  390,  430,  460,  360], // L2 meta-summary fires at turn 4
@@ -755,7 +755,14 @@ function updateTokenUI(actual){
     });
 }
 function accNaive(){
-  if(S.demoMode){ S.tokensNaiveTotal+=DEMO_TOKENS.naive[S.demoStep]||0; return; }
+  if(S.demoMode){
+    S.tokensNaiveTotal+=(DEMO_TOKENS.naive[S.demoStep]||0)+(DEMO_SCRIPT[S.demoStep]?.tokOut||0);
+    return;
+  }
+  // Live mode: accumulate naive INPUT (cumulative history sent each turn).
+  // Output tokens are added separately after the API response — see handleLiveSend —
+  // because in naive the assistant reply is identical to what we got, so we just
+  // mirror the actual output count to keep naive vs actual apples-to-apples.
   const chars=S.allMessages.reduce((s,m)=>s+m.content.length,0);
   S.tokensNaiveTotal+=Math.ceil(chars/4);
 }
@@ -769,8 +776,8 @@ function appendEvent(title, body, variant=''){
   const thread=document.getElementById('messages');
   const wrap=document.createElement('div'); wrap.className='event-wrap';
   wrap.innerHTML=`<div class="event-bubble ${variant}">
-    <div class="ev-title">${title}</div>
-    <div class="ev-body">${body}</div></div>`;
+    <div class="ev-title">${esc(title)}</div>
+    <div class="ev-body">${esc(body)}</div></div>`;
   thread.appendChild(wrap); thread.scrollTop=thread.scrollHeight;
 }
 
@@ -880,13 +887,16 @@ function renderHier(newL1, newL2){
       <div class="hier-badge"><span>L2 Meta-Summary #${s.id}</span><span class="hier-covers">covers L1 turns ${s.coversStart}–${s.coversEnd}</span></div>
       <div class="hier-body">${esc(s.text)}</div></div>`;
   });
-  S.l1Summaries.forEach(s=>{
+  // Only render L1s that haven't been rolled up into an L2 — the rolled-up ones
+  // are no longer sent to the API (see buildMessages), so they shouldn't appear here.
+  const uncompL1=S.l1Summaries.slice(S.l1CompressedAt);
+  uncompL1.forEach(s=>{
     html+=`<div class="hier-card hier-l1">
       <div class="hier-badge"><span>L1 Summary — Turn ${s.turn}</span><span class="hier-covers">~${estTok(s.text)} tok</span></div>
       <div class="hier-body">${esc(s.text)}</div></div>`;
   });
   document.getElementById('memList').innerHTML=html;
-  document.getElementById('memCount').textContent=S.l1Summaries.length+S.l2Summaries.length;
+  document.getElementById('memCount').textContent=uncompL1.length+S.l2Summaries.length;
 
   if(newL2){
     const l2=S.l2Summaries[S.l2Summaries.length-1];
@@ -994,13 +1004,10 @@ async function processAfterTurn(userMsg, assistantMsg){
     return;
   }
 
-  if(s==='rag'){
-    const base=S.messageArchive.length;
-    S.messageArchive.push({id:base,role:'user',content:userMsg});
-    S.messageArchive.push({id:base+1,role:'assistant',content:assistantMsg});
-    renderRAG(false);
-    return;
-  }
+  // NOTE: RAG is intentionally NOT handled here.
+  // Both handleDemoSend and handleLiveSend archive RAG messages inline so they
+  // can pass the actual `isRetrieved` flag to renderRAG. processAfterTurn is
+  // only called for the non-RAG strategies.
 
   if(s==='hier'){
     if(S.demoMode){
@@ -1056,7 +1063,8 @@ function scoreArchive(query){
   const scored=older.map(m=>{
     const dWords=tokenize(m.content);
     const inter=[...qWords].filter(w=>dWords.has(w)).length;
-    const score=(qWords.size+dWords.size)>0?inter/Math.sqrt(qWords.size*dWords.size):0;
+    // Both sets must be non-empty — otherwise sqrt(0) gives NaN.
+    const score=(qWords.size>0&&dWords.size>0)?inter/Math.sqrt(qWords.size*dWords.size):0;
     return{id:m.id,score};
   });
   S.lastRetrieved=new Set(scored.filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,4).map(x=>x.id));
@@ -1080,7 +1088,7 @@ async function extractEntitiesLive(userMsg,assistantMsg){
     const newEnts=ents.filter(e=>e.type&&e.key&&e.value);
     newEnts.forEach(e=>S.entityStore.push(e));
     renderEntity(newEnts);
-  }catch(_){}
+  }catch(err){ console.warn('Entity extraction failed:',err); }
 }
 
 async function generateL1Live(userMsg,assistantMsg){
@@ -1091,9 +1099,9 @@ async function generateL1Live(userMsg,assistantMsg){
     const l1={id:S.l1Summaries.length,text,turn:Math.ceil(S.allMessages.length/2)};
     S.l1Summaries.push(l1);
     let madeL2=false;
-    if((S.l1Summaries.length-S.l1CompressedAt)>=3) await compressL2Live();
+    if((S.l1Summaries.length-S.l1CompressedAt)>=3){ madeL2=await compressL2Live(); }
     renderHier(!madeL2,madeL2);
-  }catch(_){}
+  }catch(err){ console.warn('L1 summary generation failed:',err); }
 }
 
 async function compressL2Live(){
@@ -1104,7 +1112,8 @@ async function compressL2Live(){
     const l2Idx=S.l2Summaries.length;
     S.l2Summaries.push({id:l2Idx+1,text:data.content[0].text.trim(),coversStart:S.l1CompressedAt+1,coversEnd:S.l1CompressedAt+3});
     S.l1CompressedAt+=3;
-  }catch(_){}
+    return true;
+  }catch(err){ console.warn('L2 meta-summary failed:',err); return false; }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1132,7 +1141,7 @@ function hideTyping(){ const el=document.getElementById('typing'); if(el) el.rem
 async function handleDemoSend(){
   if(S.demoStep>=DEMO_SCRIPT.length){
     appendBubble('info','End of demo script. Switch strategies (strategy bar above) to run the same conversation through a different memory system — compare how the memory panel and token counters differ.');
-    S.loading=false; document.getElementById('sendBtn').disabled=false; return;
+    return;
   }
   const entry=DEMO_SCRIPT[S.demoStep];
   const inp=document.getElementById('chatInput');
@@ -1146,7 +1155,6 @@ async function handleDemoSend(){
   appendBubble('user',userText);
   refreshWinBar(); accNaive();
 
-  if(S.strategy==='sliding'&&S.swEnabled) await maybeCompressSW();
   showTyping();
   await sleep(600+Math.random()*400);
 
@@ -1186,7 +1194,6 @@ async function handleLiveSend(text){
   if(S.strategy==='rag') scoreArchive(text);
   S.allMessages.push({role:'user',content:text}); appendBubble('user',text);
   refreshWinBar(); accNaive();
-  if(S.strategy==='sliding'&&S.swEnabled) await maybeCompressSW();
   showTyping();
 
   try{
@@ -1194,6 +1201,9 @@ async function handleLiveSend(text){
     const data=await callClaude({model:MODEL,max_tokens:1024,system:SYS_MAIN,messages});
     const reply=data.content[0].text;
     const tokens=(data.usage?.input_tokens??0)+(data.usage?.output_tokens??0);
+    // Naive baseline output = actual output (same assistant reply either way).
+    // Adding it here keeps tokensNaiveTotal directly comparable to tokensActualTotal.
+    S.tokensNaiveTotal+=data.usage?.output_tokens??0;
     S.allMessages.push({role:'assistant',content:reply});
     hideTyping(); appendBubble('assistant',reply);
     updateTokenUI(tokens); refreshWinBar();
