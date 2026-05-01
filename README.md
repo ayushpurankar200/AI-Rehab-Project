@@ -33,5 +33,5 @@ To explore the demo without a key, enable **Demo Mode** in Settings and press En
 ## Tech
 
 - Vanilla HTML/CSS/JS — single file, zero frameworks
-- Claude API (`claude-sonnet-4-5`) via direct browser fetch
+- Claude API (`claude-sonnet-4-20250514`) via direct browser fetch
 - Token estimation: `chars / 4` for naive baseline; actual `usage` field from API responses in live mode

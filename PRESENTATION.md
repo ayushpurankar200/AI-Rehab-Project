@@ -13,7 +13,7 @@
 - Every LLM has a **context window** — a hard limit on how many tokens (pieces of text) it can process in one request.
 - Claude's context window is **200,000 tokens**. GPT-4o is **128,000**. These sound large, but they fill up fast in real applications.
 - The naive approach is to send the entire conversation history on every request. This works fine at first, but the cost grows **quadratically** — every new turn makes every future turn more expensive, because you're re-sending all previous turns each time.
-- After 8 turns of a normal conversation, naive costs roughly **10,200 tokens**. After 50 turns, you're looking at hundreds of thousands. After 100 turns, you exceed the window entirely and the model starts forgetting the beginning.
+- After 8 turns of a normal conversation, naive costs roughly **11,900 tokens** (input + output). After 50 turns, you're looking at hundreds of thousands. After 100 turns, you exceed the window entirely and the model starts forgetting the beginning.
 - This isn't a theoretical problem. Any AI assistant meant to hold extended conversations — therapy bots, medical documentation tools, long-term coaching systems — runs into this.
 
 ---
@@ -24,7 +24,7 @@
 "This is the control group. No memory management at all — just dump the entire history into every request."
 - Cost per turn grows linearly with conversation length
 - Input tokens after 8 turns: **~2,450 per request**
-- Session total: **~10,200 tokens**
+- Session total: **~11,900 tokens** (10,200 input + 1,725 output)
 - ✓ Perfect recall — nothing is ever lost
 - ✗ Unsustainable — cost and context size both grow without bound
 
@@ -36,7 +36,7 @@
 - Think of it like a conveyor belt — recent messages ride on top, older ones get squeezed into a summary block and fall off the end
 - Compression fires at turns 4 and 7 in the demo — you can see the token cost drop after each compression
 - Input tokens after 8 turns: **~480 per request**
-- Session total: **~4,520 tokens** — **56% less than naive**
+- Session total: **~6,200 tokens** — **48% less than naive**
 - ✓ Good recall for recent context; summaries preserve key facts
 - ✗ Fine-grained details in compressed turns are lost; summary quality depends on the LLM doing the compression
 
@@ -48,7 +48,7 @@
 - Example: instead of sending a 300-token paragraph about budget, inject `[BUDGET] total: $4,000 | est_spend: $2,420–$3,120 | accommodation: $90–130/night`
 - The fact block stays nearly the same size regardless of how many turns have passed
 - Input tokens after 8 turns: **~280 per request**
-- Session total: **~2,490 tokens** — **76% less than naive**
+- Session total: **~4,200 tokens** — **65% less than naive**
 - ✓ Extremely token-efficient; structured facts are easy to query and update
 - ✗ Only captures facts that fit a schema — nuance, tone, and reasoning are lost; works best for data-heavy conversations
 
@@ -61,7 +61,7 @@
 - The retrieval step finds what's *relevant to this specific question*, not just what's recent
 - In the demo, when the user asks about the budget in turn 8, RAG retrieves the budget message from turn 2 — even though it's been 6 turns since it was mentioned
 - Input tokens after 8 turns: **~240 per request**
-- Session total: **~2,200 tokens** — **78% less than naive**
+- Session total: **~3,900 tokens** — **67% less than naive**
 - ✓ Best for large archives; nothing is permanently forgotten; very token-efficient
 - ✗ This demo uses simple keyword overlap — production RAG uses vector embeddings which require a separate embedding model; relevance scoring can miss things if the query wording differs from the archived text
 
@@ -73,7 +73,7 @@
 - Two-tier compression: L1 keeps turn-level detail, L2 gives a bird's-eye view of topics covered
 - Analogous to how a textbook has chapter summaries and a book summary — different levels of detail at different granularities
 - Input tokens after 8 turns: **~360 per request**
-- Session total: **~3,360 tokens** — **67% less than naive**
+- Session total: **~5,100 tokens** — **57% less than naive**
 - ✓ Better recall than flat summarization; the hierarchy preserves both detail and overview
 - ✗ Most complex to implement; requires multiple compression passes; L2 quality degrades if L1s are poor
 
@@ -85,11 +85,13 @@ After the same 8-turn conversation, here's how each strategy performed:
 
 | Strategy | Session Total | Saved vs. Naive |
 |---|---|---|
-| Naive Baseline | 10,200 tokens | — |
-| Sliding Window | 4,520 tokens | **56% saved** |
-| Hierarchical | 3,360 tokens | **67% saved** |
-| Entity Extraction | 2,490 tokens | **76% saved** |
-| RAG | 2,200 tokens | **78% saved** |
+| Naive Baseline | ~11,900 tokens | — |
+| Sliding Window | ~6,200 tokens | **48% saved** |
+| Hierarchical | ~5,100 tokens | **57% saved** |
+| Entity Extraction | ~4,200 tokens | **65% saved** |
+| RAG | ~3,900 tokens | **67% saved** |
+
+All totals include both input and output tokens — the assistant's reply (~1,725 tokens across the 8 turns) is the same size for every strategy and accounts for the floor that all strategies share.
 
 "At 8 turns the savings are already significant. At 100 turns, the gap becomes enormous — naive becomes impossible (exceeds the context window), while strategies maintain a bounded cost per request."
 
