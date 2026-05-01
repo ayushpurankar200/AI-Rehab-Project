@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ContextLens — AI Memory Strategy Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:#080c18; --bg-panel:#0d1220; --bg-card:#131b2e; --bg-input:#181f34;
+      --border:#1c2840; --border-bright:#253550;
+      --text-primary:#e2e8f8; --text-secondary:#7a90b0; --text-muted:#3d5070;
+      --accent:#00d4aa; --accent-dim:rgba(0,212,170,0.10); --accent-glow:rgba(0,212,170,0.30);
+      --blue:#4f8ef7; --blue-dim:rgba(79,142,247,0.10);
+      --demo-col:#f59e0b; --demo-dim:rgba(245,158,11,0.10);
+      --save-col:#34d399; --err-bg:#2a0f0f; --err-bdr:#7f1d1d; --err-txt:#fca5a5;
+      --user-bg:#0f2545; --user-bdr:#1e4080; --asst-bg:#10192a; --asst-bdr:#1c2840;
+      --font-mono:'JetBrains Mono','Fira Code','Cascadia Code','Consolas',monospace;
+      --font-sans:'Inter',system-ui,-apple-system,sans-serif;
+      --r:8px; --rl:14px;
+    }
+
+    body { font-family:var(--font-sans); background:var(--bg-deep); color:var(--text-primary); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+    /* ── TOP BAR ── */
+    .topbar { display:flex; align-items:center; gap:12px; padding:8px 18px; background:var(--bg-panel); border-bottom:1px solid var(--border); flex-shrink:0; min-height:52px; flex-wrap:wrap; }
+    .brand-name { font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--accent); letter-spacing:-.5px; }
+    .brand-sub  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+    .vdiv { width:1px; height:26px; background:var(--border); flex-shrink:0; }
+
+    .demo-badge { font-family:var(--font-mono); font-size:10px; font-weight:700; color:#000; background:var(--demo-col); padding:2px 8px; border-radius:4px; letter-spacing:.8px; display:none; flex-shrink:0; animation:demoPulse 2.4s ease-in-out infinite; }
+    .demo-badge.on { display:inline-block; }
+    @keyframes demoPulse { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.5)} 50%{box-shadow:0 0 0 7px rgba(245,158,11,0)} }
+
+    .token-stats { display:flex; align-items:center; gap:10px; flex:1; justify-content:center; }
+    .stat-block  { display:flex; flex-direction:column; align-items:center; gap:0; }
+    .stat-label  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; white-space:nowrap; }
+    .stat-value  { font-family:var(--font-mono); font-size:17px; font-weight:700; color:var(--accent); min-width:55px; text-align:center; }
+    .stat-value.sv { color:var(--save-col); }
+    .stat-sub    { font-family:var(--font-mono); font-size:8px; color:var(--text-muted); text-align:center; white-space:nowrap; }
+    @keyframes numFlash   { 0%{color:#fff;text-shadow:0 0 14px var(--accent)}  100%{color:var(--accent);text-shadow:none} }
+    @keyframes numFlashSv { 0%{color:#fff;text-shadow:0 0 14px var(--save-col)} 100%{color:var(--save-col);text-shadow:none} }
+    .stat-value.flash   { animation:numFlash   .7s ease-out; }
+    .stat-value.flashSv { animation:numFlashSv .7s ease-out; }
+
+    .settings-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-secondary); padding:5px 11px; border-radius:var(--r); cursor:pointer; font-family:var(--font-mono); font-size:11px; transition:border-color .2s,color .2s; display:flex; align-items:center; gap:5px; flex-shrink:0; }
+    .settings-btn:hover { border-color:var(--blue); color:var(--blue); }
+    .settings-btn.open  { border-color:var(--blue); color:var(--blue); background:var(--blue-dim); }
+
+    /* ── STRATEGY BAR ── */
+    .stratbar { display:flex; align-items:center; gap:10px; padding:5px 18px; background:#090d1c; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+    .spills { display:flex; gap:3px; flex-wrap:wrap; }
+    .spill  { font-family:var(--font-mono); font-size:11px; padding:3px 11px; border-radius:12px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; transition:all .18s; white-space:nowrap; }
+    .spill:hover  { border-color:var(--border-bright); color:var(--text-secondary); }
+    .spill.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+    .sw-toggle { display:none; align-items:center; gap:7px; padding:3px 10px; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; cursor:pointer; user-select:none; flex-shrink:0; }
+    .sw-toggle.visible { display:flex; }
+    .sw-toggle.on { border-color:var(--accent); box-shadow:0 0 10px var(--accent-dim); }
+    .sw-lbl { font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); transition:color .2s; }
+    .sw-toggle.on .sw-lbl { color:var(--accent); }
+    .sw-track { width:28px; height:16px; border-radius:8px; background:var(--bg-input); border:1px solid var(--border-bright); position:relative; transition:background .2s; flex-shrink:0; }
+    .sw-toggle.on .sw-track { background:var(--accent); border-color:var(--accent); }
+    .sw-knob  { position:absolute; top:2px; left:2px; width:10px; height:10px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.5); transition:transform .2s cubic-bezier(.34,1.56,.64,1); }
+    .sw-toggle.on .sw-knob { transform:translateX(12px); }
+
+    /* ── STRATEGY INFO STRIP ── */
+    .strat-info {
+      padding:6px 18px; background:#060a14; border-bottom:1px solid var(--border);
+      display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; flex-shrink:0;
+    }
+    .si-name { font-family:var(--font-mono); font-size:9px; font-weight:700; color:var(--accent); letter-spacing:1px; text-transform:uppercase; flex-shrink:0; }
+    .si-dash  { color:var(--border-bright); flex-shrink:0; }
+    .si-how   { font-family:var(--font-mono); font-size:9px; color:var(--text-secondary); flex:1; min-width:200px; line-height:1.5; }
+    .si-badges { display:flex; gap:8px; flex-shrink:0; }
+    .si-pro   { font-family:var(--font-mono); font-size:9px; color:var(--save-col); }
+    .si-con   { font-family:var(--font-mono); font-size:9px; color:#f97316; }
+
+    /* ── SETTINGS PANEL ── */
+    .settings-panel { position:fixed; top:96px; right:18px; width:300px; background:var(--bg-panel); border:1px solid var(--border-bright); border-radius:var(--rl); padding:16px; z-index:1000; box-shadow:0 12px 40px rgba(0,0,0,.6); display:none; }
+    .settings-panel.open { display:block; }
+    .s-heading { font-family:var(--font-mono); font-size:11px; color:var(--accent); letter-spacing:1px; text-transform:uppercase; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px; }
+    .srow { margin-bottom:11px; }
+    .slabel { display:block; font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); margin-bottom:4px; letter-spacing:.5px; text-transform:uppercase; }
+    .sinput { width:100%; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); padding:6px 10px; border-radius:var(--r); font-family:var(--font-mono); font-size:12px; outline:none; transition:border-color .2s; }
+    .sinput:focus { border-color:var(--accent); }
+    .slr { display:flex; align-items:center; gap:8px; }
+    .slr input[type="range"] { flex:1; accent-color:var(--accent); cursor:pointer; }
+    .sval { font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--accent); min-width:26px; text-align:right; }
+    .model-tag { font-family:var(--font-mono); font-size:11px; color:var(--blue); background:var(--blue-dim); border:1px solid rgba(79,142,247,.25); padding:3px 9px; border-radius:4px; display:inline-block; }
+    .demo-srow { margin-bottom:11px; padding:10px; background:var(--demo-dim); border:1px solid rgba(245,158,11,.2); border-radius:var(--r); }
+    .demo-row-hdr { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+    .demo-row-lbl { font-family:var(--font-mono); font-size:10px; color:var(--demo-col); letter-spacing:.5px; text-transform:uppercase; flex:1; }
+    .dtrack { width:28px; height:16px; border-radius:8px; background:var(--bg-input); border:1px solid var(--border-bright); position:relative; transition:background .2s; flex-shrink:0; }
+    .demo-row-hdr.on .dtrack { background:var(--demo-col); border-color:var(--demo-col); }
+    .dknob  { position:absolute; top:2px; left:2px; width:10px; height:10px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.5); transition:transform .2s cubic-bezier(.34,1.56,.64,1); }
+    .demo-row-hdr.on .dknob { transform:translateX(12px); }
+    .demo-desc { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); margin-top:6px; line-height:1.7; }
+    .demo-step-ctr { font-family:var(--font-mono); font-size:10px; color:var(--demo-col); margin-top:4px; display:none; }
+    .demo-step-ctr.on { display:block; }
+
+    /* ── MAIN LAYOUT ── */
+    .main { display:flex; flex:1; overflow:hidden; }
+
+    /* ── MEMORY PANEL ── */
+    .memory-panel { width:270px; flex-shrink:0; background:var(--bg-panel); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+    .mem-hdr { padding:10px 13px 8px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .mem-hdr-row { display:flex; align-items:center; justify-content:space-between; }
+    .mem-title    { font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1.2px; }
+    .mem-count    { font-family:var(--font-mono); font-size:9px; font-weight:700; background:var(--accent); color:var(--bg-deep); padding:1px 6px; border-radius:8px; }
+    .mem-explain  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); margin-top:4px; line-height:1.6; }
+    .mem-list  { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
+    .mem-list::-webkit-scrollbar { width:3px; }
+    .mem-list::-webkit-scrollbar-thumb { background:var(--border-bright); border-radius:2px; }
+    .mem-empty { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); text-align:center; padding:20px 10px; border:1px dashed var(--border); border-radius:var(--r); line-height:1.8; }
+
+    /* Sliding window chunk card */
+    .mem-card { background:var(--bg-card); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:var(--r); padding:8px 10px; animation:slideIn .35s cubic-bezier(.16,1,.3,1); }
+    @keyframes slideIn { from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:translateX(0)} }
+    .mc-hdr  { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+    .mc-lbl  { font-family:var(--font-mono); font-size:9px; font-weight:700; color:var(--accent); text-transform:uppercase; }
+    .mc-tok  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); }
+    .mc-body { font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); line-height:1.6; word-break:break-word; }
+
+    /* Entity store */
+    .ent-tags { display:flex; flex-wrap:wrap; gap:3px; padding:4px; }
+    .etag { display:inline-flex; align-items:baseline; gap:3px; font-family:var(--font-mono); font-size:9px; padding:2px 6px; border-radius:3px; line-height:1.5; max-width:100%; word-break:break-word; animation:slideIn .25s ease-out; }
+    .etag-type { font-weight:700; font-size:8px; opacity:.85; }
+
+    /* RAG archive */
+    .arch-msg { background:var(--bg-card); border:1px solid var(--border); border-left:3px solid transparent; border-radius:var(--r); padding:6px 8px; transition:border-color .3s,opacity .3s; animation:slideIn .2s ease-out; }
+    .arch-msg.retrieved     { border-left-color:var(--accent); }
+    .arch-msg.not-retrieved { opacity:.3; }
+    .arch-role    { font-family:var(--font-mono); font-size:8px; color:var(--text-muted); text-transform:uppercase; display:flex; justify-content:space-between; margin-bottom:2px; }
+    .arch-badge   { color:var(--accent); font-weight:700; }
+    .arch-preview { font-family:var(--font-mono); font-size:9px; color:var(--text-secondary); line-height:1.5; word-break:break-word; }
+
+    /* Hierarchical */
+    .hier-card { border-radius:var(--r); padding:8px 10px; animation:slideIn .35s cubic-bezier(.16,1,.3,1); margin-bottom:1px; }
+    .hier-l1   { background:var(--bg-card); border:1px solid var(--border); border-left:3px solid var(--accent); }
+    .hier-l2   { background:rgba(245,158,11,.05); border:1px solid rgba(245,158,11,.2); border-left:3px solid var(--demo-col); }
+    .hier-badge { font-family:var(--font-mono); font-size:9px; font-weight:700; text-transform:uppercase; display:flex; justify-content:space-between; margin-bottom:4px; }
+    .hier-l1 .hier-badge { color:var(--accent); }
+    .hier-l2 .hier-badge { color:var(--demo-col); }
+    .hier-covers { font-size:8px; font-weight:400; color:var(--text-muted); }
+    .hier-body   { font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); line-height:1.6; word-break:break-word; }
+
+    /* Naive panel */
+    .naive-stat { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r); padding:12px; text-align:center; margin-bottom:6px; }
+    .naive-num  { font-family:var(--font-mono); font-size:26px; font-weight:700; color:var(--err-txt); }
+    .naive-lbl  { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); margin-top:2px; }
+    .naive-warn { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-align:center; padding:9px 10px; line-height:1.8; border:1px dashed var(--err-bdr); border-radius:var(--r); }
+
+    /* ── CHAT AREA ── */
+    .chat-area { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+    .messages  { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+    .messages::-webkit-scrollbar { width:4px; }
+    .messages::-webkit-scrollbar-thumb { background:var(--border-bright); border-radius:2px; }
+
+    .welcome { margin:auto; text-align:center; padding:26px 20px; max-width:460px; }
+    .welcome-title { font-family:var(--font-mono); font-size:19px; color:var(--accent); margin-bottom:8px; }
+    .welcome-body  { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); line-height:2.1; }
+    .welcome-hint  { margin-top:12px; padding:9px 13px; background:var(--demo-dim); border:1px solid rgba(245,158,11,.2); border-radius:var(--r); font-family:var(--font-mono); font-size:10px; color:var(--demo-col); line-height:1.9; }
+
+    /* Chat bubbles */
+    .msg { display:flex; flex-direction:column; gap:3px; max-width:82%; animation:msgIn .18s ease-out; }
+    @keyframes msgIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+    .msg.user      { align-self:flex-end;   align-items:flex-end; }
+    .msg.assistant { align-self:flex-start; align-items:flex-start; }
+    .msg.system    { align-self:center; align-items:center; max-width:95%; }
+    .msg.info      { align-self:center; align-items:center; max-width:95%; }
+    .msg-lbl { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+    .msg-bubble { padding:9px 13px; border-radius:var(--rl); font-size:14px; line-height:1.65; word-break:break-word; white-space:pre-wrap; }
+    .msg.user .msg-bubble      { background:var(--user-bg); border:1px solid var(--user-bdr); border-bottom-right-radius:4px; color:#cce0ff; }
+    .msg.assistant .msg-bubble { background:var(--asst-bg); border:1px solid var(--asst-bdr); border-bottom-left-radius:4px; }
+    .msg.system .msg-bubble    { background:var(--err-bg); border:1px solid var(--err-bdr); color:var(--err-txt); font-family:var(--font-mono); font-size:12px; }
+    .msg.info .msg-bubble      { background:var(--demo-dim); border:1px solid rgba(245,158,11,.25); color:var(--demo-col); font-family:var(--font-mono); font-size:11px; }
+
+    /* Educational event bubble — explains what just happened behind the scenes */
+    .event-wrap { align-self:stretch; display:flex; justify-content:center; animation:msgIn .2s ease-out; }
+    .event-bubble {
+      background:rgba(0,212,170,0.04); border:1px solid rgba(0,212,170,0.18);
+      border-left:3px solid var(--accent); border-radius:var(--rl);
+      padding:10px 14px; width:100%; max-width:98%;
+    }
+    .event-bubble.rag-event  { background:rgba(79,142,247,0.05); border-color:rgba(79,142,247,0.2); border-left-color:var(--blue); }
+    .event-bubble.hier-event { background:rgba(245,158,11,0.05); border-color:rgba(245,158,11,0.2); border-left-color:var(--demo-col); }
+    .event-bubble.naive-event{ background:rgba(252,165,165,0.04); border-color:rgba(252,165,165,0.18); border-left-color:var(--err-txt); }
+    .ev-title { font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--accent); letter-spacing:.5px; margin-bottom:6px; }
+    .event-bubble.rag-event  .ev-title { color:var(--blue); }
+    .event-bubble.hier-event .ev-title { color:var(--demo-col); }
+    .event-bubble.naive-event .ev-title{ color:var(--err-txt); }
+    .ev-body { font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); line-height:1.75; white-space:pre-wrap; }
+
+    /* Typing indicator */
+    .msg.loading .msg-bubble { background:var(--asst-bg); border:1px solid var(--asst-bdr); border-bottom-left-radius:4px; display:flex; align-items:center; gap:5px; padding:11px 14px; }
+    .dot { width:6px; height:6px; background:var(--accent); border-radius:50%; animation:dotB 1.3s infinite; }
+    .dot:nth-child(2){ animation-delay:.18s; } .dot:nth-child(3){ animation-delay:.36s; }
+    @keyframes dotB { 0%,80%,100%{transform:translateY(0);opacity:.35} 40%{transform:translateY(-7px);opacity:1} }
+
+    /* Window bar */
+    .win-bar-wrap  { padding:4px 16px; background:rgba(0,212,170,.03); border-top:1px solid rgba(0,212,170,.07); display:flex; align-items:center; gap:9px; }
+    .win-bar-lbl   { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); white-space:nowrap; flex-shrink:0; }
+    .win-bar-track { flex:1; height:3px; background:var(--bg-input); border-radius:2px; overflow:hidden; }
+    .win-bar-fill  { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--accent),var(--blue)); transition:width .4s cubic-bezier(.4,0,.2,1); }
+
+    /* Input row */
+    .input-row { display:flex; gap:9px; align-items:flex-end; padding:11px 16px; background:var(--bg-panel); border-top:1px solid var(--border); transition:border-top-color .3s; }
+    .input-row.demo { border-top-color:rgba(245,158,11,.3); }
+    .chat-input { flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); padding:9px 12px; border-radius:var(--r); font-family:var(--font-sans); font-size:14px; line-height:1.5; outline:none; resize:none; min-height:40px; max-height:110px; transition:border-color .2s; }
+    .chat-input:focus { border-color:var(--accent); }
+    .chat-input.demo  { border-color:rgba(245,158,11,.35); }
+    .chat-input::placeholder { color:var(--text-muted); }
+    .send-btn { background:var(--accent); color:var(--bg-deep); border:none; padding:0 20px; height:40px; border-radius:var(--r); font-family:var(--font-mono); font-size:13px; font-weight:700; cursor:pointer; transition:background .15s,box-shadow .15s; flex-shrink:0; }
+    .send-btn:hover:not(:disabled){ background:#00f5c4; box-shadow:0 0 16px var(--accent-glow); }
+    .send-btn:disabled { background:var(--bg-card); color:var(--text-muted); cursor:not-allowed; }
+
+    .banner { position:fixed; top:94px; left:50%; transform:translateX(-50%); background:var(--bg-card); border:1px solid var(--accent); color:var(--accent); font-family:var(--font-mono); font-size:11px; padding:6px 16px; border-radius:18px; z-index:1100; pointer-events:none; box-shadow:0 4px 22px var(--accent-dim); animation:bannerLife 2.8s ease-out forwards; white-space:nowrap; }
+    .banner.demo { border-color:var(--demo-col); color:var(--demo-col); box-shadow:0 4px 22px var(--demo-dim); }
+    @keyframes bannerLife { 0%{opacity:0;transform:translateX(-50%) translateY(-10px)} 12%{opacity:1;transform:translateX(-50%) translateY(0)} 75%{opacity:1} 100%{opacity:0} }
+  </style>
+</head>
+<body>
+
+<!-- ═══════ TOP BAR ═══════ -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-name">ContextLens</div>
+    <div class="brand-sub">AI memory strategy demo</div>
+  </div>
+  <span class="demo-badge" id="demoBadge">DEMO</span>
+  <div class="vdiv"></div>
+  <div class="token-stats">
+    <div class="stat-block">
+      <span class="stat-label">This Request</span>
+      <span class="stat-value" id="statReq">0</span>
+      <span class="stat-sub">tokens sent + received</span>
+    </div>
+    <div class="vdiv"></div>
+    <div class="stat-block">
+      <span class="stat-label">Session Total</span>
+      <span class="stat-value" id="statTotal">0</span>
+      <span class="stat-sub">actual tokens used</span>
+    </div>
+    <div class="vdiv"></div>
+    <div class="stat-block">
+      <span class="stat-label">Naive Would Cost</span>
+      <span class="stat-value" id="statNaive">0</span>
+      <span class="stat-sub">if no strategy applied</span>
+    </div>
+    <div class="vdiv"></div>
+    <div class="stat-block">
+      <span class="stat-label">Tokens Saved</span>
+      <span class="stat-value sv" id="statSaved">0</span>
+      <span class="stat-sub">vs naive baseline</span>
+    </div>
+  </div>
+  <div class="vdiv"></div>
+  <button class="settings-btn" id="settingsBtn" onclick="toggleSettings()">⚙ Settings</button>
+</div>
+
+<!-- ═══════ STRATEGY SELECTOR BAR ═══════ -->
+<div class="stratbar">
+  <div class="spills">
+    <button class="spill"        data-s="naive"  onclick="setStrategy('naive')">① Naive</button>
+    <button class="spill active" data-s="sliding" onclick="setStrategy('sliding')">② Sliding Window</button>
+    <button class="spill"        data-s="entity"  onclick="setStrategy('entity')">③ Entity Extraction</button>
+    <button class="spill"        data-s="rag"     onclick="setStrategy('rag')">④ RAG</button>
+    <button class="spill"        data-s="hier"    onclick="setStrategy('hier')">⑤ Hierarchical</button>
+  </div>
+  <!-- Compression on/off — only shown for Sliding Window strategy -->
+  <div class="sw-toggle on visible" id="swToggle" onclick="toggleSW()">
+    <span class="sw-lbl" id="swLbl">Compression ON</span>
+    <div class="sw-track"><div class="sw-knob"></div></div>
+  </div>
+</div>
+
+<!-- ═══════ STRATEGY INFO STRIP ═══════ -->
+<!-- Explains the selected strategy in one line + shows the key tradeoff -->
+<div class="strat-info">
+  <span class="si-name" id="siName">SLIDING WINDOW</span>
+  <span class="si-dash">—</span>
+  <span class="si-how"  id="siHow">When the message count exceeds the window size, the oldest messages are compressed into a short summary by a separate AI call. Future requests send [summaries + recent messages] instead of full history.</span>
+  <div class="si-badges">
+    <span class="si-pro" id="siPro">✓ Token cost stays flat</span>
+    <span class="si-con" id="siCon">✗ Lossy — old details may not survive compression</span>
+  </div>
+</div>
+
+<!-- ═══════ SETTINGS PANEL ═══════ -->
+<div class="settings-panel" id="settingsPanel">
+  <div class="s-heading">// Configuration</div>
+
+  <div class="demo-srow">
+    <div class="demo-row-hdr" id="demoHdr" onclick="toggleDemo()">
+      <span class="demo-row-lbl">Demo Mode</span>
+      <div class="dtrack"><div class="dknob"></div></div>
+    </div>
+    <div class="demo-desc">
+      Runs a scripted 8-turn scenario with no API key needed.
+      Switch strategies to see how each one handles the same conversation.
+    </div>
+    <div class="demo-step-ctr" id="demoStepCtr">Step 0 / 8 completed</div>
+  </div>
+
+  <div class="srow">
+    <label class="slabel">API Key (live mode only)</label>
+    <input type="password" class="sinput" id="apiKey" placeholder="sk-ant-api03-..." oninput="S.apiKey=this.value.trim()">
+  </div>
+  <div class="srow">
+    <label class="slabel">Window Size — messages kept verbatim</label>
+    <div class="slr">
+      <input type="range" min="2" max="10" value="6" id="winSlider" oninput="setWinSize(+this.value)">
+      <span class="sval" id="winVal">6</span>
+    </div>
+  </div>
+  <div class="srow">
+    <label class="slabel">Compression buffer (+N over window)</label>
+    <div class="slr">
+      <input type="range" min="1" max="5" value="1" id="thrSlider" oninput="setThreshold(+this.value)">
+      <span class="sval" id="thrVal">+1</span>
+    </div>
+  </div>
+  <div class="srow">
+    <label class="slabel">Model</label>
+    <div class="model-tag">claude-sonnet-4-5</div>
+  </div>
+</div>
+
+<!-- ═══════ MAIN LAYOUT ═══════ -->
+<div class="main">
+
+  <!-- ── MEMORY PANEL ── -->
+  <div class="memory-panel">
+    <div class="mem-hdr">
+      <div class="mem-hdr-row">
+        <span class="mem-title" id="memTitle">Compressed Memory</span>
+        <span class="mem-count" id="memCount">0</span>
+      </div>
+      <div class="mem-explain" id="memExplain">Each card = one batch of old messages, replaced by a summary</div>
+    </div>
+    <div class="mem-list" id="memList">
+      <div class="mem-empty" id="memEmpty">Nothing compressed yet —<br>keep chatting to see<br>this panel fill up</div>
+    </div>
+  </div>
+
+  <!-- ── CHAT AREA ── -->
+  <div class="chat-area">
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-title">ContextLens</div>
+        <div class="welcome-body">
+          Every time you send a message, ALL previous messages are sent to the AI too.<br>
+          This makes long conversations expensive and eventually impossible.<br><br>
+          This app compares <strong style="color:var(--accent)">5 strategies</strong> for solving that problem.<br>
+          Pick one in the bar above — the memory panel shows what's stored.<br>
+          <strong style="color:var(--accent)">Yellow event boxes</strong> will appear explaining what happens behind the scenes.
+        </div>
+        <div class="welcome-hint">
+          No API key? Enable <strong>Demo Mode</strong> in Settings →<br>
+          then press Enter to step through a scripted scenario.
+        </div>
+      </div>
+    </div>
+
+    <div class="win-bar-wrap">
+      <span class="win-bar-lbl" id="winLabel">Live window: 0 / 6 msgs</span>
+      <div class="win-bar-track"><div class="win-bar-fill" id="winFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="input-row" id="inputRow">
+      <textarea class="chat-input" id="chatInput" placeholder="Type a message…" rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="handleSend()">Send</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const MODEL    = 'claude-sonnet-4-5';
+const ENDPOINT = 'https://api.anthropic.com/v1/messages';
+const SYS_MAIN = `You are a helpful assistant. You may receive a compressed summary of earlier context. Treat it as accurate prior context.`;
+const STOP = new Set(['this','that','with','from','have','what','your','their','they','were','been','will','would','could','should','about','which','there','when','where','these','those','them','just','also','very','more','some','than','then','into','over','after','before','make','here','want']);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ═══════════════════════════════════════════════════════════════
+// STRATEGY METADATA
+// Shown in the info strip below the strategy bar.
+// ═══════════════════════════════════════════════════════════════
+const STRAT_META = {
+  naive: {
+    name: 'NAIVE BASELINE',
+    memTitle: 'Full History',
+    memExplain: 'Every message sent on every request — no compression or filtering',
+    how: 'Every message ever sent is included in every API call. Nothing is removed, summarized, or filtered. This is the baseline all other strategies improve upon.',
+    pro: '✓ Perfect recall — nothing is ever lost',
+    con: '✗ Cost grows with every message — will eventually hit context limit',
+  },
+  sliding: {
+    name: 'SLIDING WINDOW',
+    memTitle: 'Compressed Memory',
+    memExplain: 'Each card = one batch of old messages replaced by a summary',
+    how: 'When the message count exceeds the window size, the oldest messages are compressed into a summary by a separate AI call. Requests send [summaries + recent messages] instead of full history.',
+    pro: '✓ Token cost stays flat after initial buildup',
+    con: '✗ Lossy — details from old messages may not survive compression',
+  },
+  entity: {
+    name: 'ENTITY EXTRACTION',
+    memTitle: 'Entity Store',
+    memExplain: 'Structured facts extracted after each turn — like a typed database',
+    how: 'After each turn, Claude extracts structured facts (budget, places, activities, etc.) into a typed store. Requests inject these as "Known facts: [TYPE] key: value" instead of prose summaries.',
+    pro: '✓ Precise recall for specific facts — numbers, names, decisions',
+    con: '✗ Loses conversational nuance — only explicitly extracted facts are kept',
+  },
+  rag: {
+    name: 'RAG (RETRIEVAL-AUGMENTED)',
+    memTitle: 'Message Archive',
+    memExplain: 'Full archive kept forever — highlighted cards were retrieved for this query',
+    how: 'Every message is archived permanently — nothing is ever deleted or compressed. When you send a query, each archived message is scored for relevance. Only the top matches are injected as context.',
+    pro: '✓ Lossless — the full history is always preserved',
+    con: '✗ Retrieval quality depends on keyword overlap — subtle relevance can be missed',
+  },
+  hier: {
+    name: 'HIERARCHICAL SUMMARIZATION',
+    memTitle: 'Summary Hierarchy',
+    memExplain: 'Teal = L1 per-turn summaries · Amber = L2 meta-summaries (summaries of summaries)',
+    how: 'Two compression levels: after each turn a fine-grained L1 summary is created. When 3 L1 summaries accumulate, they\'re compressed into a coarser L2 meta-summary. Requests use [L2s] + [recent L1s] + [live messages].',
+    pro: '✓ More detail preserved than flat summarization — recent nuance survives in L1',
+    con: '✗ L2 is a summary of summaries — two layers of approximation compound errors',
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// DEMO SCRIPT
+// 8-turn Switzerland trip-planning conversation.
+// The assistant responses are the same across all strategies —
+// only what gets stored/compressed/retrieved differs.
+// ═══════════════════════════════════════════════════════════════
+const DEMO_SCRIPT = [
+  { userHint: "I'm planning a 10-day trip to Switzerland — 3 cities, hiking, and trains.",
+    assistant: `Great choice! Here's a classic 10-day itinerary:
+
+Zurich (Days 1–2): Old town, Lake Zurich, Swiss National Museum. Good transport hub.
+Interlaken (Days 3–6): The hiking capital. Base for Jungfrau, Grindelwald, Schynige Platte.
+Lucerne (Days 7–9): Chapel Bridge, lake cruises, day trips to Mt. Pilatus or Rigi.
+Day 10: Return to Zurich for your flight.
+
+The Swiss Travel Pass covers nearly all trains, buses, and boats — highly recommended. Want help with budget, hikes, or train connections?`,
+    tokIn:148, tokOut:187 },
+
+  { userHint: "My total budget is $4,000. Is that realistic for 10 days?",
+    assistant: `$4,000 for 10 days is tight but doable. Rough breakdown:
+
+• Accommodation (budget/mid-range): $90–130/night → $1,000–1,300
+• Swiss Travel Pass (8-day): ~$420
+• Food (mix of self-catering + restaurants): $50–70/day → $500–700
+• Activities (Jungfraujoch ~$180, Pilatus ~$45, misc): $300–400
+• Buffer: $200–300
+
+Estimated total: $2,420–3,120, leaving $880–1,580 unspent. The biggest lever is accommodation — mixing hostels with Airbnb saves $300+.`,
+    tokIn:312, tokOut:201 },
+
+  { userHint: "What are the best hikes near Interlaken?",
+    assistant: `Interlaken has some of the best hiking in the Alps. By difficulty:
+
+Easy (2–4 hrs): Harder Kulm (gondola up, hike down — panoramic Eiger/Jungfrau views), Niederhorn (quiet ridge walk).
+
+Moderate (4–6 hrs): Schynige Platte to First (classic ridge traverse), Grindelwald First Cliff Walk (glass-floor overlooks).
+
+Challenging (6–8 hrs): Männlichen to Kleine Scheidegg (direct Eiger north face views throughout).
+
+All accessible by train or gondola from Interlaken — no car needed.`,
+    tokIn:487, tokOut:215 },
+
+  { userHint: "How does the Swiss train system work? Do I need to book seats?",
+    assistant: `Swiss trains are famously punctual. Key things:
+
+Swiss Travel Pass: Covers unlimited travel on trains, buses, and most lake boats. Just board — no ticket buying each time. Also gives free/discounted entry to 500+ museums.
+
+Reservations: Most trains need NO advance booking — just hop on. Exceptions:
+• Glacier Express (Zermatt–St. Moritz): reservation required (~$15)
+• Bernina Express (Chur–Lugano): reservation required (~$15)
+
+Interlaken tip: Two stations — Ost and West. Mountain trains for Jungfrau region depart from Ost.`,
+    tokIn:623, tokOut:228 },
+
+  { userHint: "What Swiss foods should I try?",
+    assistant: `Don't miss these:
+
+• Fondue — order moitié-moitié (Gruyère + Vacherin Fribourgeois) in a mountain hut.
+• Raclette — melted cheese on potatoes, pickles, pearl onions. Perfect after a hike.
+• Rösti — Swiss-style hash browns. The unofficial national dish.
+• Zürcher Geschnetzeltes — sliced veal in cream sauce, served with rösti. Zurich specialty.
+• Älplermagronen — alpine mac & cheese with applesauce on the side (trust it).
+
+Budget tip: Migros and Coop supermarkets have excellent prepared foods, far cheaper than restaurants.`,
+    tokIn:412, tokOut:244 },
+
+  { userHint: "What's the weather like? When is the best time to visit?",
+    assistant: `Mountain weather is highly variable. Quick breakdown:
+
+June–August (Peak): Best for hiking. Valley 22–28°C, mountain huts 5–15°C. Afternoon thunderstorms common — start hikes early. Crowded and expensive.
+
+May & September (Shoulder): 20–30% cheaper. September has fall colors and stable weather. May may still have snow on high trails.
+
+Packing essentials above 2,000m:
+• Waterproof jacket (always — even in summer)
+• Layers
+• Sunscreen (UV intensity much higher at altitude)
+
+If flexible, late September is ideal: golden light, empty trails, cool and clear.`,
+    tokIn:534, tokOut:232 },
+
+  { userHint: "Are there any hidden gem towns most tourists miss?",
+    assistant: `Switzerland rewards going slightly off-script:
+
+Appenzell (northeast): Perfectly preserved village, colorful painted facades, Appenzeller cheese. Very few international tourists.
+
+Gruyères (Fribourg): Medieval hilltop town where the cheese originates. Castle walls + cheese factory below.
+
+Stein am Rhein (near Schaffhausen): Fresco-covered buildings along the Rhine. Usually skipped because it's slightly out of the way.
+
+Aletsch Glacier area: Europe's largest glacier — hike to it from Riederalp instead of the crowded Jungfraujoch approach. Far fewer tourists, equally stunning.`,
+    tokIn:478, tokOut:262 },
+
+  { userHint: "Quick question — what was the total budget we settled on earlier?",
+    assistant: `Based on our earlier conversation, your total budget was $4,000 for the 10-day trip.
+
+We broke it down as:
+• Accommodation: $1,000–1,300
+• Swiss Travel Pass: ~$420
+• Food: $500–700
+• Activities (Jungfraujoch, Pilatus, etc.): $300–400
+• Buffer: $200–300
+
+Estimated spend: $2,420–3,120, leaving roughly $880–1,580 in reserve.
+
+Note: The $4,000 figure was mentioned in our second message — which has long since left the live context window. This answer came from the strategy's memory system, not the raw history.`,
+    tokIn:198, tokOut:156 },
+];
+
+// ── Per-strategy input-token costs for each demo turn ──
+// Naive sends the full growing history every request (costs escalate).
+// Each strategy compresses or filters context, keeping costs bounded.
+// tokOut (response size) is the same for all strategies — it's just Claude's reply.
+const DEMO_TOKENS = {
+  naive:   [200, 450, 750, 1100, 1400, 1750, 2100, 2450], // session total: ~10,200
+  sliding: [200, 420, 680,  820,  590,  640,  690,  480], // compression fires at turn 4 and 7
+  entity:  [200, 290, 340,  360,  330,  340,  350,  280], // tiny entity list stays flat
+  rag:     [200, 320, 280,  310,  260,  290,  300,  240], // only retrieves 2-3 relevant chunks
+  hier:    [200, 410, 570,  540,  390,  430,  460,  360], // L2 meta-summary fires at turn 4
+};
+
+// ── Sliding window: scripted summaries used when compression fires ──
+const DEMO_SW = [
+  `User plans 10-day Switzerland trip: Zurich, Interlaken, Lucerne. Budget $4,000 (est. spend $2,420–$3,120). Swiss Travel Pass recommended. Interested in hiking and trains.`,
+  `Interlaken hiking options: Harder Kulm (easy), Schynige Platte–First (moderate), Männlichen (hard). Swiss Travel Pass covers most transport; Glacier Express needs $15 reservation. Use Interlaken Ost for mountains.`,
+  `Swiss foods: fondue, raclette, rösti, Zürcher Geschnetzeltes. Migros/Coop much cheaper. Best time: late September — quieter, 20–30% cheaper. Pack waterproof jacket above 2,000m.`,
+  `Hidden gems: Appenzell, Gruyères, Stein am Rhein, Aletsch Glacier — all accessible without a car.`,
+];
+let swSumIdx = 0;
+
+// ── Entity extraction: pre-extracted entities per turn ──
+const DEMO_ENT = [
+  [{type:'PLAN',key:'duration',value:'10-day trip'},{type:'PLACE',key:'cities',value:'Zurich, Interlaken, Lucerne'},{type:'ACTIVITY',key:'interests',value:'hiking + trains'}],
+  [{type:'BUDGET',key:'total',value:'$4,000'},{type:'BUDGET',key:'est_spend',value:'$2,420–$3,120'},{type:'BUDGET',key:'accommodation',value:'$90–130/night'},{type:'BUDGET',key:'travel_pass',value:'~$420'}],
+  [{type:'ACTIVITY',key:'hike_easy',value:'Harder Kulm, Niederhorn'},{type:'ACTIVITY',key:'hike_moderate',value:'Schynige Platte–First, First Cliff Walk'},{type:'ACTIVITY',key:'hike_hard',value:'Männlichen–Kleine Scheidegg'}],
+  [{type:'TRANSPORT',key:'pass_covers',value:'trains, buses, boats'},{type:'TRANSPORT',key:'needs_booking',value:'Glacier Express + Bernina Express (~$15)'},{type:'TRANSPORT',key:'station_tip',value:'Interlaken Ost for mountains'}],
+  [{type:'FOOD',key:'must_try',value:'fondue, raclette, rösti, Geschnetzeltes'},{type:'FOOD',key:'budget_tip',value:'Migros/Coop far cheaper than restaurants'}],
+  [{type:'WEATHER',key:'best_time',value:'late September'},{type:'WEATHER',key:'gear',value:'waterproof jacket + layers above 2,000m'}],
+  [{type:'PLACE',key:'hidden_gems',value:'Appenzell, Gruyères, Stein am Rhein, Aletsch Glacier'}],
+  [],
+];
+
+// ── RAG: which archived message IDs to retrieve per step ──
+// IDs: 0=user0, 1=asst0, 2=user1(budget), 3=asst1(budget)…
+// Step 7 (budget question) retrieves the budget messages (IDs 2–3) specifically
+const DEMO_RAG = [
+  [],[0,1],[0,1,2,3],[2,3,4,5],[4,5,6,7],[6,7,8,9],[8,9,10,11],
+  [2,3], // ← the key demo moment: budget question retrieves the budget discussion
+];
+
+// ── Hierarchical: L1 per-turn summaries + L2 meta-summaries ──
+const DEMO_L1 = [
+  'User plans 10-day Switzerland trip visiting Zurich, Interlaken, and Lucerne. Swiss Travel Pass recommended for all transport.',
+  'Budget: $4,000 total. Estimated spend $2,420–$3,120. Key costs: accommodation $90–130/night, Swiss Travel Pass ~$420.',
+  'Interlaken hiking: Harder Kulm (easy, 2-3h), Schynige Platte–First (moderate, 4-6h), Männlichen–Kleine Scheidegg (hard, 6-8h).',
+  'Swiss Travel Pass covers most transport. Glacier Express + Bernina Express need $15 reservations. Use Interlaken Ost for mountains.',
+  'Must-try foods: fondue, raclette, rösti, Zürcher Geschnetzeltes. Migros/Coop much cheaper than restaurants.',
+  'Best time: late September (quieter, cheaper, fall colors). Pack waterproof jacket + layers above 2,000m. High UV.',
+  'Hidden gems: Appenzell, Gruyères, Stein am Rhein, Aletsch Glacier — all quieter than main tourist spots.',
+];
+const DEMO_L2 = [
+  'Switzerland 10-day trip: $4,000 budget ($2,420–$3,120 est. spend). Three cities. Swiss Travel Pass essential. Interlaken hiking from easy (Harder Kulm) to hard (Männlichen). Accommodation is the key budget lever.',
+  'Practical info: fondue/raclette/rösti must-try foods; Migros/Coop for budget meals. Best time: September. Always pack waterproof jacket. Hidden gems include Appenzell, Gruyères, and Aletsch Glacier.',
+];
+
+// Entity type → display colour
+const ENT_COL = {BUDGET:'#34d399',PLAN:'#60a5fa',ACTIVITY:'#fbbf24',TRANSPORT:'#00d4aa',FOOD:'#f97316',WEATHER:'#a78bfa',PLACE:'#4f8ef7',OTHER:'#7a90b0'};
+
+// ═══════════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════════
+const S = {
+  apiKey:'', strategy:'sliding', swEnabled:true,
+  allMessages:[], memoryChunks:[], compressedUpTo:0,
+  entityStore:[], messageArchive:[], lastRetrieved:new Set(),
+  l1Summaries:[], l2Summaries:[], l1CompressedAt:0,
+  windowSize:6, threshold:1,
+  tokensThisReq:0, tokensActualTotal:0, tokensNaiveTotal:0,
+  loading:false, demoMode:false, demoStep:0,
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════
+function setWinSize(v) { S.windowSize=v; document.getElementById('winVal').textContent=v; refreshWinBar(); }
+function setThreshold(v){ S.threshold=v;  document.getElementById('thrVal').textContent='+'+v; }
+function toggleSettings() {
+  const p=document.getElementById('settingsPanel'), b=document.getElementById('settingsBtn');
+  const open=p.classList.toggle('open'); b.classList.toggle('open',open);
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#settingsPanel')&&!e.target.closest('#settingsBtn')){
+    document.getElementById('settingsPanel').classList.remove('open');
+    document.getElementById('settingsBtn').classList.remove('open');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// STRATEGY SWITCHING
+// Updates all strategy-dependent UI and resets conversation state.
+// ═══════════════════════════════════════════════════════════════
+function setStrategy(s) {
+  S.strategy = s;
+  const m = STRAT_META[s];
+
+  document.querySelectorAll('.spill').forEach(el => el.classList.toggle('active', el.dataset.s===s));
+  document.getElementById('swToggle').classList.toggle('visible', s==='sliding');
+  document.getElementById('siName').textContent    = m.name;
+  document.getElementById('siHow').textContent     = m.how;
+  document.getElementById('siPro').textContent     = m.pro;
+  document.getElementById('siCon').textContent     = m.con;
+  document.getElementById('memTitle').textContent   = m.memTitle;
+  document.getElementById('memExplain').textContent = m.memExplain;
+
+  resetState();
+  showBanner(`Strategy: ${m.name}`);
+}
+
+function resetState() {
+  S.allMessages=[]; S.memoryChunks=[]; S.compressedUpTo=0;
+  S.entityStore=[]; S.messageArchive=[]; S.lastRetrieved=new Set();
+  S.l1Summaries=[]; S.l2Summaries=[]; S.l1CompressedAt=0;
+  S.tokensThisReq=0; S.tokensActualTotal=0; S.tokensNaiveTotal=0;
+  S.demoStep=0; swSumIdx=0;
+
+  document.getElementById('memList').innerHTML='<div class="mem-empty" id="memEmpty">Nothing here yet —<br>keep chatting to see<br>this panel fill up</div>';
+  document.getElementById('memCount').textContent='0';
+  ['statReq','statTotal','statNaive','statSaved'].forEach(id=>document.getElementById(id).textContent='0');
+
+  const thread = document.getElementById('messages');
+  if (!thread.querySelector('.welcome')) {
+    thread.innerHTML=`<div class="welcome" id="welcome">
+      <div class="welcome-title">ContextLens</div>
+      <div class="welcome-body">Strategy switched — start chatting to see how <strong style="color:var(--accent)">${STRAT_META[S.strategy].name}</strong> manages context.<br><br>
+      Watch the memory panel on the left and the <strong style="color:var(--accent)">event boxes</strong> in the chat<br>to understand what's happening behind the scenes.</div>
+      <div class="welcome-hint">Demo Mode is ${S.demoMode?'ON — press Enter to advance':'OFF — enable in Settings for a scripted walkthrough'}.</div></div>`;
+  }
+  if (S.demoMode) {
+    updateDemoStepUI();
+    const inp=document.getElementById('chatInput');
+    inp.value=DEMO_SCRIPT[0].userHint; autoResize(inp);
+  }
+  refreshWinBar();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SLIDING WINDOW SUB-TOGGLE
+// ═══════════════════════════════════════════════════════════════
+function toggleSW() {
+  S.swEnabled=!S.swEnabled;
+  document.getElementById('swToggle').classList.toggle('on',S.swEnabled);
+  document.getElementById('swLbl').textContent=S.swEnabled?'Compression ON':'Compression OFF';
+  showBanner(S.swEnabled?'Compression enabled':'Disabled — sending full history (same as Naive)');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEMO MODE
+// ═══════════════════════════════════════════════════════════════
+function toggleDemo() {
+  S.demoMode=!S.demoMode;
+  const on=S.demoMode;
+  document.getElementById('demoHdr').classList.toggle('on',on);
+  document.getElementById('demoBadge').classList.toggle('on',on);
+  document.getElementById('demoStepCtr').classList.toggle('on',on);
+  document.getElementById('inputRow').classList.toggle('demo',on);
+  resetState();
+  const inp=document.getElementById('chatInput');
+  if(on){
+    setWinSize(4); document.getElementById('winSlider').value=4;
+    inp.className='chat-input demo';
+    inp.placeholder='Edit or press Enter to advance the demo…';
+    inp.value=DEMO_SCRIPT[0].userHint; autoResize(inp); inp.focus();
+    showBanner('Demo Mode ON — press Enter to step through the scenario',true);
+  } else {
+    setWinSize(6); document.getElementById('winSlider').value=6;
+    inp.className='chat-input'; inp.placeholder='Type a message…';
+    inp.value=''; autoResize(inp);
+    showBanner('Demo Mode OFF',false);
+  }
+}
+function updateDemoStepUI() {
+  document.getElementById('demoStepCtr').textContent=`Step ${S.demoStep} / ${DEMO_SCRIPT.length} completed`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BANNER
+// ═══════════════════════════════════════════════════════════════
+function showBanner(text,isDemo=false){
+  document.querySelectorAll('.banner').forEach(b=>b.remove());
+  const b=document.createElement('div'); b.className='banner'+(isDemo?' demo':''); b.textContent=text;
+  document.body.appendChild(b); setTimeout(()=>b.remove(),3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WINDOW BAR
+// ═══════════════════════════════════════════════════════════════
+function refreshWinBar(){
+  const live=S.allMessages.length-S.compressedUpTo;
+  const pct=Math.min(100,Math.round((live/S.windowSize)*100));
+  document.getElementById('winFill').style.width=pct+'%';
+  document.getElementById('winLabel').textContent=`Live window: ${live} / ${S.windowSize} msgs`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOKEN UI
+// ═══════════════════════════════════════════════════════════════
+function updateTokenUI(actual){
+  S.tokensThisReq=actual; S.tokensActualTotal+=actual;
+  const saved=Math.max(0,S.tokensNaiveTotal-S.tokensActualTotal);
+  [['statReq',actual,false],['statTotal',S.tokensActualTotal,false],
+   ['statNaive',S.tokensNaiveTotal,false],['statSaved',saved,true]]
+    .forEach(([id,val,isSv])=>{
+      const el=document.getElementById(id);
+      el.textContent=val.toLocaleString();
+      el.classList.remove('flash','flashSv'); void el.offsetWidth;
+      el.classList.add(isSv?'flashSv':'flash');
+    });
+}
+function accNaive(){
+  if(S.demoMode){ S.tokensNaiveTotal+=DEMO_TOKENS.naive[S.demoStep]||0; return; }
+  const chars=S.allMessages.reduce((s,m)=>s+m.content.length,0);
+  S.tokensNaiveTotal+=Math.ceil(chars/4);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EVENT BUBBLES
+// These appear in the chat thread to explain what just happened
+// behind the scenes — making the invisible visible for the demo.
+// ═══════════════════════════════════════════════════════════════
+function appendEvent(title, body, variant=''){
+  const thread=document.getElementById('messages');
+  const wrap=document.createElement('div'); wrap.className='event-wrap';
+  wrap.innerHTML=`<div class="event-bubble ${variant}">
+    <div class="ev-title">${title}</div>
+    <div class="ev-body">${body}</div></div>`;
+  thread.appendChild(wrap); thread.scrollTop=thread.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MEMORY PANEL RENDERERS
+// ═══════════════════════════════════════════════════════════════
+
+// Naive: just shows a growing message count and a warning
+function renderNaive(){
+  document.getElementById('memList').innerHTML=`
+    <div class="naive-stat">
+      <div class="naive-num">${S.allMessages.length}</div>
+      <div class="naive-lbl">messages in every request</div>
+    </div>
+    <div class="naive-warn">
+      No compression or filtering applied.<br>Each request includes all ${S.allMessages.length} messages.<br>
+      Compare this to other strategies where the panel shows what was compressed or stored separately.
+    </div>`;
+  document.getElementById('memCount').textContent=S.allMessages.length;
+}
+
+// Sliding window: adds a compressed chunk card with slide-in animation
+function addSWCard(chunk,verbatimTok){
+  const empty=document.getElementById('memEmpty'); if(empty) empty.remove();
+  const card=document.createElement('div'); card.className='mem-card';
+  card.innerHTML=`<div class="mc-hdr">
+    <span class="mc-lbl">Chunk #${chunk.id} — msgs ${chunk.startMsg}–${chunk.endMsg}</span>
+    <span class="mc-tok">~${chunk.tokEst} tok</span></div>
+    <div class="mc-body">${esc(chunk.summary)}</div>`;
+  document.getElementById('memList').appendChild(card);
+  document.getElementById('memCount').textContent=S.memoryChunks.length;
+
+  // Explain what just happened in the chat
+  const msgCount = chunk.endMsg - chunk.startMsg + 1;
+  const saved = verbatimTok - chunk.tokEst;
+  appendEvent(
+    `⟳  COMPRESSION TRIGGERED — Memory Chunk #${chunk.id} created`,
+    `Messages ${chunk.startMsg}–${chunk.endMsg} (${msgCount} messages, ~${verbatimTok} tokens verbatim) were compressed into a ${chunk.tokEst}-token summary.\n\nSavings from this compression: ~${saved} tokens.\n\nFrom now on, those ${msgCount} messages are replaced by that summary card (visible in the left panel). They will no longer be sent verbatim — only the summary travels with future requests.`
+  );
+}
+
+// Entity extraction: color-coded tags for each entity type
+function renderEntity(newEntities){
+  if(S.entityStore.length===0){
+    document.getElementById('memList').innerHTML='<div class="mem-empty" id="memEmpty">No entities yet —<br>facts appear here<br>after each exchange</div>';
+    document.getElementById('memCount').textContent='0'; return;
+  }
+  const tagsHtml=S.entityStore.map(e=>{
+    const c=ENT_COL[e.type]||ENT_COL.OTHER;
+    return `<span class="etag" style="background:${c}1a;border:1px solid ${c}55;color:${c}">
+      <span class="etag-type">${esc(e.type)}</span>
+      <span class="etag-val"> ${esc(e.key)}: ${esc(e.value)}</span></span>`;
+  }).join('');
+  document.getElementById('memList').innerHTML=`<div style="padding:4px"><div class="ent-tags">${tagsHtml}</div></div>`;
+  document.getElementById('memCount').textContent=S.entityStore.length;
+
+  if(newEntities&&newEntities.length>0){
+    const list=newEntities.map(e=>`  [${e.type}] ${e.key}: ${e.value}`).join('\n');
+    appendEvent(
+      `⊞  ENTITIES EXTRACTED — Turn ${S.demoStep}`,
+      `${newEntities.length} new fact(s) added to the entity store:\n${list}\n\nOn every future request, these are injected as a structured "Known facts:" block instead of prose summaries.\nThis gives precise recall for specific values (e.g. the exact budget number), at the cost of losing conversational tone.`
+    );
+  }
+}
+
+// RAG: full archive with retrieval highlighting
+function renderRAG(isRetrieval){
+  if(S.messageArchive.length===0){
+    document.getElementById('memList').innerHTML='<div class="mem-empty" id="memEmpty">Archive empty —<br>every message is stored here<br>permanently as you chat</div>';
+    document.getElementById('memCount').textContent='0'; return;
+  }
+  const hasRetrieval=S.lastRetrieved.size>0;
+  const items=S.messageArchive.map(m=>{
+    const ret=S.lastRetrieved.has(m.id);
+    const cls=hasRetrieval?(ret?'retrieved':'not-retrieved'):'';
+    const badge=ret?`<span class="arch-badge">↑ retrieved</span>`:'';
+    const preview=m.content.slice(0,55)+(m.content.length>55?'…':'');
+    return `<div class="arch-msg ${cls}">
+      <div class="arch-role"><span>${m.role==='user'?'You':'Claude'} #${m.id}</span>${badge}</div>
+      <div class="arch-preview">${esc(preview)}</div></div>`;
+  }).join('');
+  document.getElementById('memList').innerHTML=items;
+  document.getElementById('memCount').textContent=S.messageArchive.length;
+
+  if(isRetrieval&&S.lastRetrieved.size>0){
+    const ids=[...S.lastRetrieved].sort((a,b)=>a-b);
+    const retrieved=S.messageArchive.filter(m=>S.lastRetrieved.has(m.id));
+    const totalArchiveTok=Math.ceil(S.messageArchive.reduce((s,m)=>s+m.content.length,0)/4);
+    const retrievedTok=Math.ceil(retrieved.reduce((s,m)=>s+m.content.length,0)/4);
+    appendEvent(
+      `⟲  RAG RETRIEVAL — ${ids.length} message(s) matched your query`,
+      `Archive size: ${S.messageArchive.length} messages (~${totalArchiveTok} tokens total).\nRetrieved: messages #${ids.join(', #')} (~${retrievedTok} tokens) based on keyword relevance to your query.\n\nOnly the retrieved messages were injected as context — the rest of the archive was NOT sent.\nLook at the memory panel: highlighted cards were retrieved; dimmed cards were ignored this turn.\n\nThis is how RAG avoids the "full history" problem while staying lossless.`,
+      'rag-event'
+    );
+  }
+}
+
+// Hierarchical: two-level tree of summaries
+function renderHier(newL1, newL2){
+  if(S.l1Summaries.length===0&&S.l2Summaries.length===0){
+    document.getElementById('memList').innerHTML='<div class="mem-empty" id="memEmpty">No summaries yet —<br>L1 summaries appear<br>after each exchange</div>';
+    document.getElementById('memCount').textContent='0'; return;
+  }
+  let html='';
+  S.l2Summaries.forEach(s=>{
+    html+=`<div class="hier-card hier-l2">
+      <div class="hier-badge"><span>L2 Meta-Summary #${s.id}</span><span class="hier-covers">covers L1 turns ${s.coversStart}–${s.coversEnd}</span></div>
+      <div class="hier-body">${esc(s.text)}</div></div>`;
+  });
+  S.l1Summaries.forEach(s=>{
+    html+=`<div class="hier-card hier-l1">
+      <div class="hier-badge"><span>L1 Summary — Turn ${s.turn}</span><span class="hier-covers">~${estTok(s.text)} tok</span></div>
+      <div class="hier-body">${esc(s.text)}</div></div>`;
+  });
+  document.getElementById('memList').innerHTML=html;
+  document.getElementById('memCount').textContent=S.l1Summaries.length+S.l2Summaries.length;
+
+  if(newL2){
+    const l2=S.l2Summaries[S.l2Summaries.length-1];
+    const l1Tok=3*50; // approx
+    appendEvent(
+      `≡≡  L2 META-SUMMARY CREATED — 3 L1 summaries rolled up`,
+      `L1 summaries from turns ${l2.coversStart}–${l2.coversEnd} (3 summaries, ~${l1Tok} tokens) were compressed into one L2 meta-summary (~${estTok(l2.text)} tokens).\n\nThis is "summarizing the summaries." The amber card in the memory panel is the L2.\nThe L1s it replaced are removed from future requests — only the L2 travels forward.\n\nTradeoff: more efficient than keeping all L1s, but the second compression layer may lose fine-grained details.`,
+      'hier-event'
+    );
+  } else if(newL1){
+    const l1=S.l1Summaries[S.l1Summaries.length-1];
+    const remaining=3-(S.l1Summaries.length-S.l1CompressedAt);
+    appendEvent(
+      `≡  L1 SUMMARY CREATED — Turn ${l1.turn}`,
+      `This turn's exchange was compressed into a 1–2 sentence summary (~${estTok(l1.text)} tokens).\nThe full exchange (~${S.demoStep*60} tokens) has been replaced by this teal card in the memory panel.\n\n${remaining>0?`${remaining} more L1 summary(ies) needed before an L2 meta-summary is created.`:'Next L1 summary will trigger an L2 meta-summary.'}`,
+      'hier-event'
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BUILD MESSAGES — assembles what to send to Claude per strategy
+// ═══════════════════════════════════════════════════════════════
+function buildMessages(){
+  const s=S.strategy;
+  if(s==='naive') return S.allMessages.slice();
+
+  if(s==='sliding'){
+    const out=[];
+    if(S.memoryChunks.length>0){
+      const combined=S.memoryChunks.map(c=>c.summary).join('\n\n');
+      out.push({role:'user',content:`Here is a summary of our earlier conversation:\n\n${combined}`});
+      out.push({role:'assistant',content:'Understood, I have that context.'});
+    }
+    out.push(...S.allMessages.slice(S.compressedUpTo)); return out;
+  }
+
+  if(s==='entity'){
+    const out=[];
+    if(S.entityStore.length>0){
+      const facts=S.entityStore.map(e=>`[${e.type}] ${e.key}: ${e.value}`).join('\n');
+      out.push({role:'user',content:`Known facts from our earlier conversation:\n${facts}`});
+      out.push({role:'assistant',content:'Understood, I have those facts.'});
+    }
+    out.push(...S.allMessages.slice(Math.max(0,S.allMessages.length-S.windowSize))); return out;
+  }
+
+  if(s==='rag'){
+    const out=[];
+    if(S.lastRetrieved.size>0){
+      const retrieved=S.messageArchive.filter(m=>S.lastRetrieved.has(m.id)).sort((a,b)=>a.id-b.id);
+      if(retrieved.length>0){
+        const ctx=retrieved.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.content}`).join('\n\n');
+        out.push({role:'user',content:`Relevant context from earlier:\n\n${ctx}`});
+        out.push({role:'assistant',content:'Understood, I have that context.'});
+      }
+    }
+    out.push(...S.allMessages.slice(Math.max(0,S.allMessages.length-2))); return out;
+  }
+
+  if(s==='hier'){
+    const out=[];
+    const recentL2=S.l2Summaries.slice(-2);
+    const uncompL1=S.l1Summaries.slice(S.l1CompressedAt);
+    const recentL1=uncompL1.slice(-2);
+    if(recentL2.length>0||recentL1.length>0){
+      let parts=[];
+      if(recentL2.length>0) parts.push('=== Overview (L2) ===\n'+recentL2.map(s=>s.text).join('\n'));
+      if(recentL1.length>0) parts.push('=== Recent details (L1) ===\n'+recentL1.map(s=>s.text).join('\n'));
+      out.push({role:'user',content:'Context from earlier:\n\n'+parts.join('\n\n')});
+      out.push({role:'assistant',content:'Understood.'});
+    }
+    out.push(...S.allMessages.slice(Math.max(0,S.allMessages.length-S.windowSize))); return out;
+  }
+
+  return S.allMessages.slice();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROCESS AFTER TURN — strategy-specific memory updates
+// ═══════════════════════════════════════════════════════════════
+async function processAfterTurn(userMsg, assistantMsg){
+  const s=S.strategy;
+
+  if(s==='naive'){
+    renderNaive();
+    // Show event explaining the cost growth
+    const totalTok=Math.ceil(S.allMessages.reduce((sum,m)=>sum+m.content.length,0)/4);
+    appendEvent(
+      `○  FULL HISTORY SENT — Turn ${Math.ceil(S.allMessages.length/2)}`,
+      `All ${S.allMessages.length} messages were sent in this request (~${totalTok} tokens).\nNext turn will send ${S.allMessages.length+2} messages. The request will keep growing.\n\nThis is the problem that all other strategies solve. Compare "Naive Would Cost" vs "Session Total" in the header — with other strategies, those numbers diverge over time.`,
+      'naive-event'
+    );
+    return;
+  }
+
+  if(s==='sliding'){ if(S.swEnabled) await maybeCompressSW(); return; }
+
+  if(s==='entity'){
+    if(S.demoMode){
+      const newEnts=DEMO_ENT[S.demoStep-1]||[];
+      newEnts.forEach(e=>S.entityStore.push(e));
+      renderEntity(newEnts);
+    } else { await extractEntitiesLive(userMsg,assistantMsg); }
+    return;
+  }
+
+  if(s==='rag'){
+    const base=S.messageArchive.length;
+    S.messageArchive.push({id:base,role:'user',content:userMsg});
+    S.messageArchive.push({id:base+1,role:'assistant',content:assistantMsg});
+    renderRAG(false);
+    return;
+  }
+
+  if(s==='hier'){
+    if(S.demoMode){
+      const step=S.demoStep-1;
+      if(step<DEMO_L1.length){
+        const l1={id:S.l1Summaries.length,text:DEMO_L1[step],turn:step+1};
+        S.l1Summaries.push(l1);
+        let madeL2=false;
+        if((S.l1Summaries.length-S.l1CompressedAt)>=3){
+          const l2Idx=S.l2Summaries.length;
+          S.l2Summaries.push({id:l2Idx+1,text:DEMO_L2[l2Idx]||'',coversStart:S.l1CompressedAt+1,coversEnd:S.l1CompressedAt+3});
+          S.l1CompressedAt+=3; madeL2=true;
+        }
+        renderHier(!madeL2,madeL2);
+      }
+    } else { await generateL1Live(userMsg,assistantMsg); }
+    return;
+  }
+}
+
+// ── Sliding window: compress oldest messages when window is full ──
+async function maybeCompressSW(){
+  const live=S.allMessages.length-S.compressedUpTo;
+  if(live<=S.windowSize+S.threshold) return;
+
+  const keepFrom=S.allMessages.length-S.windowSize;
+  const toComp=S.allMessages.slice(S.compressedUpTo,keepFrom);
+  if(toComp.length<2) return;
+
+  const verbatimTok=Math.ceil(toComp.reduce((s,m)=>s+m.content.length,0)/4);
+
+  let summary;
+  if(S.demoMode){
+    await sleep(300);
+    summary=DEMO_SW[swSumIdx%DEMO_SW.length]; swSumIdx++;
+  } else {
+    summary=await summarizeLive(toComp);
+  }
+
+  const chunk={id:S.memoryChunks.length+1,summary,tokEst:estTok(summary),startMsg:S.compressedUpTo+1,endMsg:keepFrom};
+  S.memoryChunks.push(chunk);
+  S.compressedUpTo=keepFrom;
+  addSWCard(chunk, verbatimTok); // addSWCard also fires the event bubble
+  refreshWinBar();
+}
+
+// ── RAG: score archive BEFORE building messages ──
+function scoreArchive(query){
+  if(S.demoMode){ S.lastRetrieved=new Set(DEMO_RAG[S.demoStep]||[]); return; }
+  const qWords=tokenize(query);
+  if(qWords.size===0){ S.lastRetrieved=new Set(); return; }
+  const older=S.messageArchive.slice(0,Math.max(0,S.messageArchive.length-2));
+  const scored=older.map(m=>{
+    const dWords=tokenize(m.content);
+    const inter=[...qWords].filter(w=>dWords.has(w)).length;
+    const score=(qWords.size+dWords.size)>0?inter/Math.sqrt(qWords.size*dWords.size):0;
+    return{id:m.id,score};
+  });
+  S.lastRetrieved=new Set(scored.filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,4).map(x=>x.id));
+}
+function tokenize(t){ return new Set(t.toLowerCase().split(/\W+/).filter(w=>w.length>3&&!STOP.has(w))); }
+
+// ── Live mode side-calls ──
+async function summarizeLive(messages){
+  const text=messages.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.content}`).join('\n\n');
+  const data=await callClaude({model:MODEL,max_tokens:200,system:'You are a concise summarizer.',
+    messages:[{role:'user',content:`Summarize this conversation segment in under 80 words, preserving all key facts:\n\n${text}`}]});
+  return data.content[0].text.trim();
+}
+
+async function extractEntitiesLive(userMsg,assistantMsg){
+  try{
+    const data=await callClaude({model:MODEL,max_tokens:256,system:'You extract entities. Return ONLY valid JSON, no other text.',
+      messages:[{role:'user',content:`Extract key entities from this exchange as a JSON array. Each: {"type":"BUDGET|PLAN|ACTIVITY|TRANSPORT|FOOD|PLACE|WEATHER|OTHER","key":"label","value":"value under 10 words"}:\n\nUser: ${userMsg}\n\nAssistant: ${assistantMsg}`}]});
+    let ents=[];
+    try{ents=JSON.parse(data.content[0].text.trim());}catch(_){}
+    const newEnts=ents.filter(e=>e.type&&e.key&&e.value);
+    newEnts.forEach(e=>S.entityStore.push(e));
+    renderEntity(newEnts);
+  }catch(_){}
+}
+
+async function generateL1Live(userMsg,assistantMsg){
+  try{
+    const data=await callClaude({model:MODEL,max_tokens:80,system:'You summarize conversation turns.',
+      messages:[{role:'user',content:`Summarize this exchange in 1–2 sentences:\n\nUser: ${userMsg}\n\nAssistant: ${assistantMsg}`}]});
+    const text=data.content[0].text.trim();
+    const l1={id:S.l1Summaries.length,text,turn:Math.ceil(S.allMessages.length/2)};
+    S.l1Summaries.push(l1);
+    let madeL2=false;
+    if((S.l1Summaries.length-S.l1CompressedAt)>=3) await compressL2Live();
+    renderHier(!madeL2,madeL2);
+  }catch(_){}
+}
+
+async function compressL2Live(){
+  const toRoll=S.l1Summaries.slice(S.l1CompressedAt,S.l1CompressedAt+3);
+  try{
+    const data=await callClaude({model:MODEL,max_tokens:150,system:'You summarize summaries.',
+      messages:[{role:'user',content:`Create a meta-summary of these 3 summaries in under 60 words:\n\n${toRoll.map(s=>'• '+s.text).join('\n')}`}]});
+    const l2Idx=S.l2Summaries.length;
+    S.l2Summaries.push({id:l2Idx+1,text:data.content[0].text.trim(),coversStart:S.l1CompressedAt+1,coversEnd:S.l1CompressedAt+3});
+    S.l1CompressedAt+=3;
+  }catch(_){}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT UI
+// ═══════════════════════════════════════════════════════════════
+function appendBubble(role,content){
+  const welcome=document.getElementById('welcome'); if(welcome) welcome.remove();
+  const thread=document.getElementById('messages');
+  const div=document.createElement('div'); div.className=`msg ${role}`;
+  const lbl={user:'You',assistant:'Claude',system:'System',info:'Demo'}[role]||role;
+  div.innerHTML=`<span class="msg-lbl">${lbl}</span><div class="msg-bubble">${esc(content)}</div>`;
+  thread.appendChild(div); thread.scrollTop=thread.scrollHeight;
+}
+function showTyping(){
+  const thread=document.getElementById('messages');
+  const div=document.createElement('div'); div.className='msg assistant loading'; div.id='typing';
+  div.innerHTML=`<span class="msg-lbl">Claude</span><div class="msg-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  thread.appendChild(div); thread.scrollTop=thread.scrollHeight;
+}
+function hideTyping(){ const el=document.getElementById('typing'); if(el) el.remove(); }
+
+// ═══════════════════════════════════════════════════════════════
+// DEMO SEND
+// ═══════════════════════════════════════════════════════════════
+async function handleDemoSend(){
+  if(S.demoStep>=DEMO_SCRIPT.length){
+    appendBubble('info','End of demo script. Switch strategies (strategy bar above) to run the same conversation through a different memory system — compare how the memory panel and token counters differ.');
+    S.loading=false; document.getElementById('sendBtn').disabled=false; return;
+  }
+  const entry=DEMO_SCRIPT[S.demoStep];
+  const inp=document.getElementById('chatInput');
+  const userText=inp.value.trim()||entry.userHint;
+  inp.value=''; inp.style.height='auto';
+  S.loading=true; document.getElementById('sendBtn').disabled=true;
+
+  if(S.strategy==='rag') scoreArchive(userText);
+
+  S.allMessages.push({role:'user',content:userText});
+  appendBubble('user',userText);
+  refreshWinBar(); accNaive();
+
+  if(S.strategy==='sliding'&&S.swEnabled) await maybeCompressSW();
+  showTyping();
+  await sleep(600+Math.random()*400);
+
+  const reply=entry.assistant;
+  const stratTokIn=(DEMO_TOKENS[S.strategy]||DEMO_TOKENS.naive)[S.demoStep]||entry.tokIn;
+  const tokens=stratTokIn+entry.tokOut;
+  S.allMessages.push({role:'assistant',content:reply});
+  S.demoStep++;
+  hideTyping(); appendBubble('assistant',reply);
+  updateTokenUI(tokens); refreshWinBar();
+
+  // For RAG, render after archiving so retrieval highlights show
+  if(S.strategy==='rag'){
+    const isRetrieval=S.lastRetrieved.size>0;
+    const base=S.messageArchive.length;
+    S.messageArchive.push({id:base,role:'user',content:userText});
+    S.messageArchive.push({id:base+1,role:'assistant',content:reply});
+    renderRAG(isRetrieval);
+  } else {
+    await processAfterTurn(userText,reply);
+  }
+
+  updateDemoStepUI();
+  if(S.demoStep<DEMO_SCRIPT.length){ inp.value=DEMO_SCRIPT[S.demoStep].userHint; autoResize(inp); }
+  else { inp.value=''; inp.placeholder='Demo complete — switch strategy to compare, or disable Demo Mode.'; }
+  S.loading=false; document.getElementById('sendBtn').disabled=false; inp.focus();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LIVE SEND
+// ═══════════════════════════════════════════════════════════════
+async function handleLiveSend(text){
+  if(!S.apiKey){ appendBubble('system','Please enter your API key in Settings. Or enable Demo Mode in Settings to try without a key.'); return; }
+  const inp=document.getElementById('chatInput'); inp.value=''; inp.style.height='auto';
+  S.loading=true; document.getElementById('sendBtn').disabled=true;
+
+  if(S.strategy==='rag') scoreArchive(text);
+  S.allMessages.push({role:'user',content:text}); appendBubble('user',text);
+  refreshWinBar(); accNaive();
+  if(S.strategy==='sliding'&&S.swEnabled) await maybeCompressSW();
+  showTyping();
+
+  try{
+    const messages=buildMessages();
+    const data=await callClaude({model:MODEL,max_tokens:1024,system:SYS_MAIN,messages});
+    const reply=data.content[0].text;
+    const tokens=(data.usage?.input_tokens??0)+(data.usage?.output_tokens??0);
+    S.allMessages.push({role:'assistant',content:reply});
+    hideTyping(); appendBubble('assistant',reply);
+    updateTokenUI(tokens); refreshWinBar();
+    if(S.strategy==='rag'){
+      const isRet=S.lastRetrieved.size>0;
+      const base=S.messageArchive.length;
+      S.messageArchive.push({id:base,role:'user',content:text});
+      S.messageArchive.push({id:base+1,role:'assistant',content:reply});
+      renderRAG(isRet);
+    } else { await processAfterTurn(text,reply); }
+  }catch(err){ hideTyping(); appendBubble('system',err.message); }
+  finally{ S.loading=false; document.getElementById('sendBtn').disabled=false; document.getElementById('chatInput').focus(); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN SEND ROUTER
+// ═══════════════════════════════════════════════════════════════
+async function handleSend(){
+  const text=document.getElementById('chatInput').value.trim();
+  if(!text||S.loading) return;
+  if(S.demoMode){ await handleDemoSend(); return; }
+  await handleLiveSend(text);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════════
+async function callClaude(payload){
+  if(!S.apiKey) throw new Error('No API key set.');
+  const res=await fetch(ENDPOINT,{method:'POST',headers:{'x-api-key':S.apiKey,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(payload)});
+  if(!res.ok){
+    let msg=res.statusText; try{msg=(await res.json()).error?.message||msg;}catch(_){}
+    if(res.status===401) throw new Error('Invalid API key — check Settings.');
+    if(res.status===429) throw new Error('Rate limit — please wait a moment.');
+    throw new Error(`API error ${res.status}: ${msg}`);
+  }
+  return res.json();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function estTok(t){ return Math.ceil(t.length/4); }
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); handleSend(); } }
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+function esc(s){ const d=document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+
+// Init
+refreshWinBar();
+</script>
+</body>
+</html>
