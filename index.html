@@ -218,6 +218,28 @@
     .banner { position:fixed; top:94px; left:50%; transform:translateX(-50%); background:var(--bg-card); border:1px solid var(--accent); color:var(--accent); font-family:var(--font-mono); font-size:11px; padding:6px 16px; border-radius:18px; z-index:1100; pointer-events:none; box-shadow:0 4px 22px var(--accent-dim); animation:bannerLife 2.8s ease-out forwards; white-space:nowrap; }
     .banner.demo { border-color:var(--demo-col); color:var(--demo-col); box-shadow:0 4px 22px var(--demo-dim); }
     @keyframes bannerLife { 0%{opacity:0;transform:translateX(-50%) translateY(-10px)} 12%{opacity:1;transform:translateX(-50%) translateY(0)} 75%{opacity:1} 100%{opacity:0} }
+
+    /* ── AND EVEN MORE TAB ── */
+    .spill.extras { border-color:rgba(245,158,11,.3); color:var(--demo-col); }
+    .spill.extras:hover { background:var(--demo-dim); border-color:var(--demo-col); }
+    .spill.extras.active { background:var(--demo-col); color:#000; border-color:var(--demo-col); }
+
+    .extras-panel { display:none; flex:1; overflow-y:auto; padding:20px 22px; flex-direction:column; gap:14px; }
+    .extras-panel::-webkit-scrollbar { width:4px; }
+    .extras-panel::-webkit-scrollbar-thumb { background:var(--border-bright); border-radius:2px; }
+    .extras-intro { font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); padding:11px 14px; background:var(--bg-card); border:1px solid var(--border); border-left:3px solid var(--demo-col); border-radius:var(--r); line-height:1.8; }
+    .extra-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    @media(max-width:1150px){ .extra-grid { grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:700px)  { .extra-grid { grid-template-columns:1fr; } }
+    .extra-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r); padding:13px 15px; display:flex; flex-direction:column; gap:7px; animation:slideIn .25s ease-out; }
+    .ex-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:2px; }
+    .ex-name { font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--text-primary); letter-spacing:.3px; flex:1; }
+    .ex-badge { font-family:var(--font-mono); font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:.5px; white-space:nowrap; flex-shrink:0; }
+    .ex-lbl { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.7px; margin-top:2px; }
+    .ex-what    { font-family:var(--font-mono); font-size:11px; color:var(--text-secondary); line-height:1.7; }
+    .ex-usecase { font-family:var(--font-mono); font-size:11px; color:var(--blue); line-height:1.6; }
+    .ex-pro     { font-family:var(--font-mono); font-size:11px; color:var(--save-col); line-height:1.6; }
+    .ex-con     { font-family:var(--font-mono); font-size:11px; color:var(--err-txt); line-height:1.6; }
   </style>
 </head>
 <body>
@@ -265,8 +287,9 @@
     <button class="spill"        data-s="naive"  onclick="setStrategy('naive')">① Naive</button>
     <button class="spill active" data-s="sliding" onclick="setStrategy('sliding')">② Sliding Window</button>
     <button class="spill"        data-s="entity"  onclick="setStrategy('entity')">③ Entity Extraction</button>
-    <button class="spill"        data-s="rag"     onclick="setStrategy('rag')">④ RAG</button>
-    <button class="spill"        data-s="hier"    onclick="setStrategy('hier')">⑤ Hierarchical</button>
+    <button class="spill"        data-s="hier"    onclick="setStrategy('hier')">④ Hierarchical</button>
+    <button class="spill"        data-s="rag"     onclick="setStrategy('rag')">⑤ RAG</button>
+    <button class="spill extras" data-s="extras"  onclick="showExtras()">⊕ And Even More</button>
   </div>
   <!-- Compression on/off — only shown for Sliding Window strategy -->
   <div class="sw-toggle on visible" id="swToggle" onclick="toggleSW()">
@@ -377,6 +400,14 @@
 
 </div>
 
+<!-- ═══════ EXTRAS PANEL ═══════ -->
+<div class="extras-panel" id="extrasPanel">
+  <div class="extras-intro">
+    Nine techniques beyond the five implemented in this demo — spanning production infrastructure, advanced retrieval, model-level architectural changes, and cognitive-science-inspired memory systems. None of these are hypothetical: all are either deployed in production or active published research.
+  </div>
+  <div class="extra-grid" id="extraGrid"></div>
+</div>
+
 <script>
 'use strict';
 
@@ -435,6 +466,57 @@ const STRAT_META = {
     con: '✗ L2 is a summary of summaries — two layers of approximation compound errors',
   },
 };
+
+// ═══════════════════════════════════════════════════════════════
+// EXTRAS — nine advanced techniques not implemented in this demo
+// ═══════════════════════════════════════════════════════════════
+const EXTRAS = [
+  { name:'GRAPH RAG', badge:'RETRIEVAL', bc:'#4f8ef7',
+    what:'Stores knowledge as a graph — nodes are entities, edges are relationships. Traverses connections to find answers instead of scanning raw text.',
+    use:'Clinical records where relationships matter: "what exercises did the patient do before their pain score improved?" — flat text search can\'t answer that; a graph traversal can.',
+    pro:'✓ Captures relationships between facts, not just the facts themselves',
+    con:'✗ Building and maintaining the graph is expensive; requires structured extraction at every turn' },
+  { name:'PROMPT CACHING / KV CACHE REUSE', badge:'INFRASTRUCTURE', bc:'#00d4aa',
+    what:'The server saves its computed internal representation of context that appears unchanged across requests. You only pay to process a stable prefix once — subsequent calls reuse the cached result.',
+    use:'Any system with a large fixed system prompt or reference documents. Anthropic already offers this — structure your context so stable parts come first.',
+    pro:'✓ Up to 90% cost reduction on repeated prefixes with zero logic changes',
+    con:'✗ Only helps with stable content — dynamic per-turn history still pays full price each time' },
+  { name:'MEMGPT / LETTA', badge:'AGENT MEMORY', bc:'#a78bfa',
+    what:'Instead of fixed application rules deciding what to compress or retrieve, the model itself receives memory tools — archive, retrieve, compress — as function calls it can invoke when it decides to.',
+    use:'Long-running AI agents or assistants where the right memory strategy depends on content, not just conversation length.',
+    pro:'✓ Flexible — model decides what matters rather than following rigid application logic',
+    con:'✗ Every memory decision costs extra tokens; the model can make poor choices about what to keep' },
+  { name:'STATE SPACE MODELS (MAMBA)', badge:'ARCHITECTURE', bc:'#f97316',
+    what:'Alternative to the transformer. Instead of every token attending to every other token (quadratic cost), history is compressed into a fixed-size state vector that updates token-by-token. Linear cost with length.',
+    use:'Applications needing very long sequences affordably — continuous sensor streams, real-time patient monitoring, always-on assistants.',
+    pro:'✓ Linear cost with sequence length; transformers are quadratic — double the length, quadruple the cost',
+    con:'✗ Still trails transformers on quality at equivalent model size; active research, not yet production-dominant' },
+  { name:'NEURAL COMPRESSION (LLMLINGUA)', badge:'COMPRESSION', bc:'#fbbf24',
+    what:'A small cheap model scores every token in the context for importance and drops low-scoring ones. The result looks like garbled English to humans but the main model can still interpret it correctly.',
+    use:'Backend pipelines where only the AI reads the compressed output — batch processing, server-side summarization where human readability is unnecessary.',
+    pro:'✓ 3–5× higher compression ratio than prose summarization with less information loss',
+    con:'✗ Output is not human-readable; requires a specialized compression model as a dependency' },
+  { name:'STREAMING LLM / ATTENTION SINKS', badge:'ARCHITECTURE', bc:'#f97316',
+    what:'Always keep the first 4 tokens ("attention sink") plus a rolling window of recent tokens; discard everything else. Those first tokens act as structural anchors that prevent generation from degrading.',
+    use:'Infinite-length streaming applications — chatbots running for days, always-on monitoring, real-time assistants that can never clear their context.',
+    pro:'✓ Enables genuinely infinite-length generation without any performance degradation',
+    con:'✗ Everything outside the recent window is lost entirely — no archive, no retrieval, no summaries' },
+  { name:'CONTEXTUAL RETRIEVAL', badge:'RETRIEVAL', bc:'#4f8ef7',
+    what:'Before embedding each chunk for RAG storage, prepend an AI-generated description of its surrounding context ("This excerpt from turn 3 discusses the patient\'s budget concerns..."). Retrieval accuracy improves significantly.',
+    use:'Any RAG system where chunks lose meaning in isolation — clinical notes, conversation excerpts, document sections that reference earlier content.',
+    pro:'✓ Retrieval accuracy improves dramatically with minimal architectural change',
+    con:'✗ Requires one AI call per chunk at indexing time — expensive for large archives' },
+  { name:'RE-RANKING', badge:'RETRIEVAL', bc:'#4f8ef7',
+    what:'After retrieving the top-K candidates by similarity score, a second cross-encoder model reads each candidate together with the full question and re-scores by true relevance before deciding what to inject.',
+    use:'High-stakes retrieval where injecting wrong context is worse than injecting nothing — medical diagnosis support, legal research, clinical decision tools.',
+    pro:'✓ Far more accurate than similarity scores alone; filters out plausible-but-wrong retrievals',
+    con:'✗ One additional model call per retrieval adds latency; can dominate response time' },
+  { name:'EPISODIC + SEMANTIC MEMORY', badge:'MEMORY SYSTEM', bc:'#34d399',
+    what:'Inspired by human cognition: episodic memory stores specific events with timestamps ("patient reported 7/10 pain on March 3rd"), semantic memory stores general facts ("ibuprofen reduces inflammation"). Stored and retrieved separately.',
+    use:'Long-term patient-facing rehab AI — clinical notes are episodic, medical knowledge is semantic. Separating them prevents one from contaminating the other.',
+    pro:'✓ Mirrors how human memory is organized; retrieval is more targeted and less noisy',
+    con:'✗ The boundary between episodic and semantic is often blurry; incorrect classification causes retrieval failures' },
+];
 
 // ═══════════════════════════════════════════════════════════════
 // DEMO SCRIPT
@@ -685,8 +767,36 @@ function setStrategy(s) {
   document.getElementById('memTitle').textContent   = m.memTitle;
   document.getElementById('memExplain').textContent = m.memExplain;
 
+  document.getElementById('extrasPanel').style.display='none';
+  document.querySelector('.main').style.display='flex';
   resetState();
   showBanner(`Strategy: ${m.name}`);
+}
+
+function showExtras() {
+  document.querySelectorAll('.spill').forEach(el=>el.classList.toggle('active',el.dataset.s==='extras'));
+  document.getElementById('swToggle').classList.remove('visible');
+  document.querySelector('.main').style.display='none';
+  document.getElementById('extrasPanel').style.display='flex';
+  document.getElementById('siName').textContent='AND EVEN MORE';
+  document.getElementById('siHow').textContent='Nine advanced techniques beyond the five strategies — production infrastructure, better retrieval, neural compression, architectural alternatives, and cognitive-science-inspired memory systems.';
+  document.getElementById('siPro').textContent='✓ This is where production systems actually live';
+  document.getElementById('siCon').textContent='✗ Most require specialized models, infrastructure, or are still active research';
+
+  const grid=document.getElementById('extraGrid');
+  if(grid.children.length) return; // already rendered
+  grid.innerHTML=EXTRAS.map(e=>`
+    <div class="extra-card">
+      <div class="ex-top">
+        <span class="ex-name">${esc(e.name)}</span>
+        <span class="ex-badge" style="background:${e.bc}22;border:1px solid ${e.bc}55;color:${e.bc}">${esc(e.badge)}</span>
+      </div>
+      <div class="ex-what">${esc(e.what)}</div>
+      <div class="ex-lbl">Use case</div>
+      <div class="ex-usecase">${esc(e.use)}</div>
+      <div class="ex-pro">${esc(e.pro)}</div>
+      <div class="ex-con">${esc(e.con)}</div>
+    </div>`).join('');
 }
 
 function resetState() {
