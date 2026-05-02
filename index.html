@@ -556,11 +556,11 @@ Note: Both the budget AND the hike details came from messages compressed/archive
 // Each strategy compresses or filters context, keeping costs bounded.
 // tokOut (response size) is the same for all strategies — it's just Claude's reply.
 const DEMO_TOKENS = {
-  naive:   [200, 450, 750, 1100, 1400, 1750, 2100, 2450], // session total: ~10,200
-  sliding: [200, 420, 680,  820,  590,  640,  690,  480], // with demo defaults (window=4, threshold=1) compression fires from turn 3 onwards
+  naive:   [200, 450, 750, 1100, 1400, 1750, 2100, 2450], // input grows linearly each turn
+  sliding: [200, 420, 680,  820,  590,  640,  690,  480], // compression fires after turns 3-8 with demo defaults (window=4, threshold=1)
   entity:  [200, 290, 340,  360,  330,  340,  350,  280], // tiny entity list stays flat
-  rag:     [200, 320, 280,  310,  260,  290,  300,  240], // only retrieves 2-3 relevant chunks
-  hier:    [200, 410, 570,  540,  390,  430,  460,  360], // L2 meta-summary fires at turn 4
+  rag:     [200, 320, 280,  310,  260,  290,  300,  240], // only retrieves the relevant chunks
+  hier:    [200, 410, 570,  540,  390,  430,  460,  360], // first L2 fires after turn 3, second after turn 6
 };
 
 // ── Sliding window: scripted summaries used when compression fires ──
@@ -628,7 +628,7 @@ const S = {
   entityStore:[], messageArchive:[], lastRetrieved:new Set(),
   l1Summaries:[], l2Summaries:[], l1CompressedAt:0,
   windowSize:6, threshold:1,
-  tokensThisReq:0, tokensActualTotal:0, tokensNaiveTotal:0,
+  tokensActualTotal:0, tokensNaiveTotal:0,
   loading:false, demoMode:false, demoStep:0,
 };
 
@@ -673,7 +673,7 @@ function resetState() {
   S.allMessages=[]; S.memoryChunks=[]; S.compressedUpTo=0;
   S.entityStore=[]; S.messageArchive=[]; S.lastRetrieved=new Set();
   S.l1Summaries=[]; S.l2Summaries=[]; S.l1CompressedAt=0;
-  S.tokensThisReq=0; S.tokensActualTotal=0; S.tokensNaiveTotal=0;
+  S.tokensActualTotal=0; S.tokensNaiveTotal=0;
   S.demoStep=0; swSumIdx=0;
 
   document.getElementById('memList').innerHTML='<div class="mem-empty" id="memEmpty">Nothing here yet —<br>keep chatting to see<br>this panel fill up</div>';
@@ -758,7 +758,7 @@ function refreshWinBar(){
 // TOKEN UI
 // ═══════════════════════════════════════════════════════════════
 function updateTokenUI(actual){
-  S.tokensThisReq=actual; S.tokensActualTotal+=actual;
+  S.tokensActualTotal+=actual;
   const saved=Math.max(0,S.tokensNaiveTotal-S.tokensActualTotal);
   [['statReq',actual,false],['statTotal',S.tokensActualTotal,false],
    ['statNaive',S.tokensNaiveTotal,false],['statSaved',saved,true]]
@@ -915,7 +915,8 @@ function renderHier(newL1, newL2){
 
   if(newL2){
     const l2=S.l2Summaries[S.l2Summaries.length-1];
-    const l1Tok=3*50; // approx
+    const rolledL1s=S.l1Summaries.slice(S.l1CompressedAt-3,S.l1CompressedAt);
+    const l1Tok=rolledL1s.reduce((s,l)=>s+estTok(l.text),0);
     appendEvent(
       `≡≡  L2 META-SUMMARY CREATED — 3 L1 summaries rolled up`,
       `L1 summaries from turns ${l2.coversStart}–${l2.coversEnd} (3 summaries, ~${l1Tok} tokens) were compressed into one L2 meta-summary (~${estTok(l2.text)} tokens).\n\nThis is "summarizing the summaries." The amber card in the memory panel is the L2.\nThe L1s it replaced are removed from future requests — only the L2 travels forward.\n\nTradeoff: more efficient than keeping all L1s, but the second compression layer may lose fine-grained details.`,
@@ -928,7 +929,7 @@ function renderHier(newL1, newL2){
     const exchangeTok=Math.ceil(lastTwo.reduce((s,m)=>s+m.content.length,0)/4);
     appendEvent(
       `≡  L1 SUMMARY CREATED — Turn ${l1.turn}`,
-      `This turn's exchange was compressed into a 1–2 sentence summary (~${estTok(l1.text)} tokens).\nThe full exchange (~${exchangeTok} tokens) has been replaced by this teal card in the memory panel.\n\n${remaining>0?`${remaining} more L1 summary(ies) needed before an L2 meta-summary is created.`:'Next L1 summary will trigger an L2 meta-summary.'}`,
+      `This turn's exchange was compressed into a 1–2 sentence summary (~${estTok(l1.text)} tokens).\nThe full exchange (~${exchangeTok} tokens) has been replaced by this teal card in the memory panel.\n\n${remaining} more L1 summary(ies) needed before an L2 meta-summary is created.`,
       'hier-event'
     );
   }
