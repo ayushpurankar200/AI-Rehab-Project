@@ -616,6 +616,26 @@ const DEMO_L2 = [
   'Trains: Swiss Travel Pass covers most transport (Glacier/Bernina need ~$15 reservations, use Interlaken Ost). Foods: fondue/raclette/rösti must-try, Migros/Coop for budget. Hiking weather: late September best month, 5–15°C at altitude, start by 7am for thunderstorms.',
 ];
 
+// ── Per-strategy "verdict" bubbles shown at turn 8 (the memory-recall test) ──
+// Each entry: title, body, and which existing CSS variant to use.
+const DEMO_TRADEOFF = {
+  naive: { 7: { variant:'naive-event',
+    title:'○  TURN 8 VERDICT — Perfect recall, maximum cost',
+    body:`✓ STRENGTH: Every word from all 16 prior messages was available. The AI could reconstruct exact figures, exact phrasing, exact recommendations — nothing was lost.\n\n⚠ WEAKNESS: This single turn cost ~2,450 input tokens — 12× more than turn 1. Over the 8-turn demo, naive burned ~10,000+ input tokens vs ~3,600 for sliding window.\n\nIn a 30-turn conversation naive would send ~50,000 input tokens per request. For a product serving thousands of users, that cost is unworkable — and this is why every other strategy on this panel exists.` } },
+  sliding: { 7: { variant:'',
+    title:'⟳  TURN 8 VERDICT — Bounded cost, graceful compression',
+    body:`✓ STRENGTH: Cost stayed flat at ~480 tokens this turn while naive paid ~2,450 for the same question. The compression summaries captured the key facts (budget = $4,000, hike names) and answered the recall question correctly.\n\n⚠ WEAKNESS: The original turn 2 said "mixing hostels with Airbnb saves $300+" — a specific, actionable tip. The compression summary says "accommodation $90–130/night." That tip is gone. If you asked "What was the accommodation trick you mentioned?" — the AI cannot reconstruct it from the summary card.` } },
+  entity: { 7: { variant:'',
+    title:'⊞  TURN 8 VERDICT — Surgical fact recall, zero nuance',
+    body:`✓ STRENGTH: Budget ($4,000) and moderate hikes (Schynige Platte–First, First Cliff Walk) were stored as clean entities and recalled precisely at only ~280 tokens.\n\n⚠ WEAKNESS: The original assistant reply said "$4,000 is tight but doable" — expressing calibrated uncertainty. The entity store has [BUDGET] total: $4,000 with no uncertainty attached. If you asked "Did the assistant sound confident about my budget?" — that signal is permanently lost. Entity extraction wins on efficiency for clean facts but discards all tone, nuance, and conversational flow.` } },
+  rag: { 7: { variant:'rag-event',
+    title:'⟲  TURN 8 VERDICT — Lossless archive, keyword-dependent retrieval',
+    body:`✓ STRENGTH: Nothing was ever deleted — the full archive has all 14 prior messages. The words "budget" and "hike/Interlaken" matched exactly the right messages, retrieving both topics at only ~240 tokens. This is the cheapest strategy this turn.\n\n⚠ WEAKNESS — keyword fragility: This worked because the exact words matched. If you had asked "What did you say about my travel money and the alpine trails?" — "travel money" ≠ "budget" and "alpine trails" ≠ "hikes" as far as keyword overlap is concerned. Score of zero, zero retrieval, wrong answer. Real RAG systems fix this with vector embeddings (semantic similarity) instead of keyword counting.` } },
+  hier: { 7: { variant:'hier-event',
+    title:'≡≡  TURN 8 VERDICT — Structured hierarchy, compound compression loss',
+    body:`✓ STRENGTH: The two-tier structure (L2 overview + recent L1 details) answered the recall question at ~360 tokens while preserving the arc of the conversation.\n\n⚠ WEAKNESS — compound loss: The original turn 2 said "mixing hostels with Airbnb saves $300+." The L1 compressed this to "Key costs: accommodation $90–130/night." The L2 compressed that to "Accommodation is the key budget lever." Three passes, and the specific $300 Airbnb tip survived none of them. Every compression layer quietly erases the most granular details — what remains is accurate but increasingly vague.` } },
+};
+
 // Entity type → display colour
 const ENT_COL = {BUDGET:'#34d399',PLAN:'#60a5fa',ACTIVITY:'#fbbf24',TRANSPORT:'#00d4aa',FOOD:'#f97316',WEATHER:'#a78bfa',PLACE:'#4f8ef7',OTHER:'#7a90b0'};
 
@@ -686,7 +706,7 @@ function resetState() {
       <div class="welcome-title">ContextLens</div>
       <div class="welcome-body">Strategy switched — start chatting to see how <strong style="color:var(--accent)">${STRAT_META[S.strategy].name}</strong> manages context.<br><br>
       Watch the memory panel on the left and the <strong style="color:var(--accent)">event boxes</strong> in the chat<br>to understand what's happening behind the scenes.</div>
-      <div class="welcome-hint">Demo Mode is ${S.demoMode?'ON — press Enter to advance':'OFF — enable in Settings for a scripted walkthrough'}.</div></div>`;
+      <div class="welcome-hint" id="demoHint">Demo Mode is ${S.demoMode?'ON — press Enter to advance':'OFF — enable in Settings for a scripted walkthrough'}.</div></div>`;
   }
   if (S.demoMode) {
     updateDemoStepUI();
@@ -730,6 +750,8 @@ function toggleDemo() {
     inp.value=''; autoResize(inp);
     showBanner('Demo Mode OFF',false);
   }
+  const hint=document.getElementById('demoHint');
+  if(hint) hint.textContent=`Demo Mode is ${on?'ON — press Enter to advance':'OFF — enable in Settings for a scripted walkthrough'}.`;
 }
 function updateDemoStepUI() {
   document.getElementById('demoStepCtr').textContent=`Step ${S.demoStep} / ${DEMO_SCRIPT.length} completed`;
@@ -768,6 +790,20 @@ function updateTokenUI(actual){
       el.classList.remove('flash','flashSv'); void el.offsetWidth;
       el.classList.add(isSv?'flashSv':'flash');
     });
+}
+// Adds tokens from a background side-call (summarize, entity extract, L1/L2)
+// to the session total without touching "This Request" — those are overhead
+// costs the user doesn't see turn-by-turn but should count against the strategy.
+function addSideCallTokens(n){
+  if(!n||n<=0) return;
+  S.tokensActualTotal+=n;
+  const saved=Math.max(0,S.tokensNaiveTotal-S.tokensActualTotal);
+  const el=document.getElementById('statTotal');
+  el.textContent=S.tokensActualTotal.toLocaleString();
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  const sv=document.getElementById('statSaved');
+  sv.textContent=saved.toLocaleString();
+  sv.classList.remove('flashSv'); void sv.offsetWidth; sv.classList.add('flashSv');
 }
 function accNaive(){
   if(S.demoMode){
@@ -1094,6 +1130,7 @@ async function summarizeLive(messages){
   const text=messages.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.content}`).join('\n\n');
   const data=await callClaude({model:MODEL,max_tokens:200,system:'You are a concise summarizer.',
     messages:[{role:'user',content:`Summarize this conversation segment in under 80 words, preserving all key facts:\n\n${text}`}]});
+  addSideCallTokens((data.usage?.input_tokens??0)+(data.usage?.output_tokens??0));
   return data.content[0].text.trim();
 }
 
@@ -1101,6 +1138,7 @@ async function extractEntitiesLive(userMsg,assistantMsg){
   try{
     const data=await callClaude({model:MODEL,max_tokens:256,system:'You extract entities. Return ONLY valid JSON, no other text.',
       messages:[{role:'user',content:`Extract key entities from this exchange as a JSON array. Each: {"type":"BUDGET|PLAN|ACTIVITY|TRANSPORT|FOOD|PLACE|WEATHER|OTHER","key":"label","value":"value under 10 words"}:\n\nUser: ${userMsg}\n\nAssistant: ${assistantMsg}`}]});
+    addSideCallTokens((data.usage?.input_tokens??0)+(data.usage?.output_tokens??0));
     let ents=[];
     try{ents=JSON.parse(data.content[0].text.trim());}catch(_){}
     const newEnts=ents.filter(e=>e.type&&e.key&&e.value);
@@ -1113,6 +1151,7 @@ async function generateL1Live(userMsg,assistantMsg){
   try{
     const data=await callClaude({model:MODEL,max_tokens:80,system:'You summarize conversation turns.',
       messages:[{role:'user',content:`Summarize this exchange in 1–2 sentences:\n\nUser: ${userMsg}\n\nAssistant: ${assistantMsg}`}]});
+    addSideCallTokens((data.usage?.input_tokens??0)+(data.usage?.output_tokens??0));
     const text=data.content[0].text.trim();
     const l1={id:S.l1Summaries.length,text,turn:Math.ceil(S.allMessages.length/2)};
     S.l1Summaries.push(l1);
@@ -1127,6 +1166,7 @@ async function compressL2Live(){
   try{
     const data=await callClaude({model:MODEL,max_tokens:150,system:'You summarize summaries.',
       messages:[{role:'user',content:`Create a meta-summary of these 3 summaries in under 60 words:\n\n${toRoll.map(s=>'• '+s.text).join('\n')}`}]});
+    addSideCallTokens((data.usage?.input_tokens??0)+(data.usage?.output_tokens??0));
     const l2Idx=S.l2Summaries.length;
     S.l2Summaries.push({id:l2Idx+1,text:data.content[0].text.trim(),coversStart:S.l1CompressedAt+1,coversEnd:S.l1CompressedAt+3});
     S.l1CompressedAt+=3;
@@ -1194,6 +1234,10 @@ async function handleDemoSend(){
   } else {
     await processAfterTurn(userText,reply);
   }
+
+  // After the regular event bubble, fire the per-strategy verdict at turn 8
+  const tradeoff=DEMO_TRADEOFF[S.strategy]?.[S.demoStep-1];
+  if(tradeoff) appendEvent(tradeoff.title, tradeoff.body, tradeoff.variant||'');
 
   updateDemoStepUI();
   if(S.demoStep<DEMO_SCRIPT.length){ inp.value=DEMO_SCRIPT[S.demoStep].userHint; autoResize(inp); }
