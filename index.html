@@ -502,20 +502,21 @@ Interlaken tip: Two stations — Ost and West. Mountain trains for Jungfrau regi
 Budget tip: Migros and Coop supermarkets have excellent prepared foods, far cheaper than restaurants.`,
     tokIn:412, tokOut:244 },
 
-  { userHint: "What's the weather like? When is the best time to visit?",
-    assistant: `Mountain weather is highly variable. Quick breakdown:
+  { userHint: "For those Interlaken hikes you mentioned, what weather should I prepare for and when's the best month to do them?",
+    assistant: `Mountain weather varies a lot by altitude — important context for the Interlaken hikes:
 
-June–August (Peak): Best for hiking. Valley 22–28°C, mountain huts 5–15°C. Afternoon thunderstorms common — start hikes early. Crowded and expensive.
+For the moderate hikes (Schynige Platte–First, Männlichen): June–August has the most stable weather. Valley sits at 22–28°C, but at 2,000m+ where the trails are it drops to 5–15°C. Afternoon thunderstorms common — start by 7am.
 
-May & September (Shoulder): 20–30% cheaper. September has fall colors and stable weather. May may still have snow on high trails.
+For the easier ones (Harder Kulm, Niederhorn): May–October works fine, more forgiving conditions.
 
-Packing essentials above 2,000m:
+Best month overall: late September — stable weather, fall colors, 20–30% cheaper, much less crowded.
+
+Pack regardless of month:
 • Waterproof jacket (always — even in summer)
-• Layers
-• Sunscreen (UV intensity much higher at altitude)
-
-If flexible, late September is ideal: golden light, empty trails, cool and clear.`,
-    tokIn:534, tokOut:232 },
+• Layers — temperature swings 15°C in a day at altitude
+• Sunscreen (UV much stronger above 2,000m)
+• Sturdy hiking boots for the moderate trails specifically`,
+    tokIn:534, tokOut:248 },
 
   { userHint: "Are there any hidden gem towns most tourists miss?",
     assistant: `Switzerland rewards going slightly off-script:
@@ -529,20 +530,25 @@ Stein am Rhein (near Schaffhausen): Fresco-covered buildings along the Rhine. Us
 Aletsch Glacier area: Europe's largest glacier — hike to it from Riederalp instead of the crowded Jungfraujoch approach. Far fewer tourists, equally stunning.`,
     tokIn:478, tokOut:262 },
 
-  { userHint: "Quick question — what was the total budget we settled on earlier?",
-    assistant: `Based on our earlier conversation, your total budget was $4,000 for the 10-day trip.
+  { userHint: "Quick question before I book — what was my total budget, and which Interlaken hikes did you recommend for moderate difficulty?",
+    assistant: `Pulling from our earlier conversation:
 
-We broke it down as:
+Your budget: $4,000 total for 10 days
 • Accommodation: $1,000–1,300
 • Swiss Travel Pass: ~$420
 • Food: $500–700
-• Activities (Jungfraujoch, Pilatus, etc.): $300–400
+• Activities (Jungfraujoch ~$180, Pilatus ~$45): $300–400
 • Buffer: $200–300
+Estimated spend: $2,420–3,120, leaving ~$880–1,580 in reserve.
 
-Estimated spend: $2,420–3,120, leaving roughly $880–1,580 in reserve.
+Moderate Interlaken hikes I recommended:
+• Schynige Platte to First — classic ridge traverse (4–6 hrs)
+• Grindelwald First Cliff Walk — glass-floor overlooks (4–6 hrs)
 
-Note: The $4,000 figure was mentioned in our second message — which has long since left the live context window. This answer came from the strategy's memory system, not the raw history.`,
-    tokIn:198, tokOut:156 },
+You're well within budget for these — gondola access for both is covered by the Swiss Travel Pass.
+
+Note: Both the budget AND the hike details came from messages compressed/archived several turns ago. This answer was reconstructed from the strategy's memory system, not the raw conversation history.`,
+    tokIn:198, tokOut:248 },
 ];
 
 // ── Per-strategy input-token costs for each demo turn ──
@@ -568,22 +574,26 @@ let swSumIdx = 0;
 
 // ── Entity extraction: pre-extracted entities per turn ──
 const DEMO_ENT = [
-  [{type:'PLAN',key:'duration',value:'10-day trip'},{type:'PLACE',key:'cities',value:'Zurich, Interlaken, Lucerne'},{type:'ACTIVITY',key:'interests',value:'hiking + trains'}],
-  [{type:'BUDGET',key:'total',value:'$4,000'},{type:'BUDGET',key:'est_spend',value:'$2,420–$3,120'},{type:'BUDGET',key:'accommodation',value:'$90–130/night'},{type:'BUDGET',key:'travel_pass',value:'~$420'}],
-  [{type:'ACTIVITY',key:'hike_easy',value:'Harder Kulm, Niederhorn'},{type:'ACTIVITY',key:'hike_moderate',value:'Schynige Platte–First, First Cliff Walk'},{type:'ACTIVITY',key:'hike_hard',value:'Männlichen–Kleine Scheidegg'}],
-  [{type:'TRANSPORT',key:'pass_covers',value:'trains, buses, boats'},{type:'TRANSPORT',key:'needs_booking',value:'Glacier Express + Bernina Express (~$15)'},{type:'TRANSPORT',key:'station_tip',value:'Interlaken Ost for mountains'}],
-  [{type:'FOOD',key:'must_try',value:'fondue, raclette, rösti, Geschnetzeltes'},{type:'FOOD',key:'budget_tip',value:'Migros/Coop far cheaper than restaurants'}],
-  [{type:'WEATHER',key:'best_time',value:'late September'},{type:'WEATHER',key:'gear',value:'waterproof jacket + layers above 2,000m'}],
-  [{type:'PLACE',key:'hidden_gems',value:'Appenzell, Gruyères, Stein am Rhein, Aletsch Glacier'}],
+  [{type:'PLAN',key:'duration',value:'10 days'},{type:'PLAN',key:'travel_style',value:'hiking + train-based'},{type:'PLACE',key:'cities',value:'Zurich, Interlaken, Lucerne'},{type:'PLACE',key:'days_per_city',value:'2 / 4 / 3'}],
+  [{type:'BUDGET',key:'total',value:'$4,000'},{type:'BUDGET',key:'est_spend',value:'$2,420–$3,120'},{type:'BUDGET',key:'reserve',value:'$880–$1,580'},{type:'BUDGET',key:'accommodation',value:'$90–130/night'},{type:'BUDGET',key:'travel_pass',value:'~$420 (8-day)'},{type:'BUDGET',key:'jungfraujoch',value:'~$180'},{type:'BUDGET',key:'pilatus',value:'~$45'}],
+  [{type:'ACTIVITY',key:'hike_easy',value:'Harder Kulm (2-3h), Niederhorn (3h)'},{type:'ACTIVITY',key:'hike_moderate',value:'Schynige Platte–First (4-6h), First Cliff Walk'},{type:'ACTIVITY',key:'hike_hard',value:'Männlichen–Kleine Scheidegg (6-8h)'},{type:'ACTIVITY',key:'hike_views',value:'Eiger N face, glass-floor walk'}],
+  [{type:'TRANSPORT',key:'pass_covers',value:'trains, buses, lake boats'},{type:'TRANSPORT',key:'pass_extras',value:'500+ museums free/discounted'},{type:'TRANSPORT',key:'needs_booking',value:'Glacier Express + Bernina Express (~$15 each)'},{type:'TRANSPORT',key:'station_tip',value:'Interlaken Ost for mountains'}],
+  [{type:'FOOD',key:'must_try',value:'fondue, raclette, rösti, Geschnetzeltes, Älplermagronen'},{type:'FOOD',key:'fondue_style',value:'moitié-moitié (Gruyère + Vacherin)'},{type:'FOOD',key:'budget_tip',value:'Migros/Coop far cheaper than restaurants'}],
+  [{type:'WEATHER',key:'best_month',value:'late September'},{type:'WEATHER',key:'altitude_temp',value:'5–15°C above 2,000m'},{type:'WEATHER',key:'valley_temp',value:'22–28°C summer'},{type:'WEATHER',key:'thunderstorm_pattern',value:'afternoon — start by 7am'},{type:'WEATHER',key:'gear',value:'waterproof jacket + layers + sunscreen'}],
+  [{type:'PLACE',key:'hidden_gems',value:'Appenzell, Gruyères, Stein am Rhein, Aletsch Glacier'},{type:'PLACE',key:'aletsch_alt_route',value:'Riederalp (vs. crowded Jungfraujoch)'}],
   [],
 ];
 
 // ── RAG: which archived message IDs to retrieve per step ──
 // IDs: 0=user0, 1=asst0, 2=user1(budget), 3=asst1(budget)…
-// Step 7 (budget question) retrieves the budget messages (IDs 2–3) specifically
+// Two key demo moments where RAG flexes its semantic-retrieval superpower:
+//   • Step 5 (hikes+weather callback) retrieves HIKE messages (4,5)
+//   • Step 7 (budget+hikes callback) retrieves BOTH budget (2,3) AND hikes (4,5)
 const DEMO_RAG = [
-  [],[0,1],[0,1,2,3],[2,3,4,5],[4,5,6,7],[6,7,8,9],[8,9,10,11],
-  [2,3], // ← the key demo moment: budget question retrieves the budget discussion
+  [],[0,1],[0,1,2,3],[2,3,4,5],[4,5,6,7],
+  [4,5],         // ← step 5: weather question about the hikes → retrieves hike msgs
+  [8,9,10,11],
+  [2,3,4,5],     // ← step 7: budget + hikes callback → retrieves BOTH topics
 ];
 
 // ── Hierarchical: L1 per-turn summaries + L2 meta-summaries ──
@@ -593,7 +603,7 @@ const DEMO_L1 = [
   'Interlaken hiking: Harder Kulm (easy, 2-3h), Schynige Platte–First (moderate, 4-6h), Männlichen–Kleine Scheidegg (hard, 6-8h).',
   'Swiss Travel Pass covers most transport. Glacier Express + Bernina Express need $15 reservations. Use Interlaken Ost for mountains.',
   'Must-try foods: fondue, raclette, rösti, Zürcher Geschnetzeltes. Migros/Coop much cheaper than restaurants.',
-  'Best time: late September (quieter, cheaper, fall colors). Pack waterproof jacket + layers above 2,000m. High UV.',
+  'For Interlaken hikes: best month is late September. Altitude temps 5–15°C above 2,000m, valley 22–28°C summer. Afternoon thunderstorms — start hikes by 7am. Always pack waterproof jacket + layers + sunscreen.',
   'Hidden gems: Appenzell, Gruyères, Stein am Rhein, Aletsch Glacier — all quieter than main tourist spots.',
 ];
 const DEMO_L2 = [
