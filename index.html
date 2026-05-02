@@ -909,9 +909,11 @@ function renderHier(newL1, newL2){
   } else if(newL1){
     const l1=S.l1Summaries[S.l1Summaries.length-1];
     const remaining=3-(S.l1Summaries.length-S.l1CompressedAt);
+    const lastTwo=S.allMessages.slice(-2);
+    const exchangeTok=Math.ceil(lastTwo.reduce((s,m)=>s+m.content.length,0)/4);
     appendEvent(
       `≡  L1 SUMMARY CREATED — Turn ${l1.turn}`,
-      `This turn's exchange was compressed into a 1–2 sentence summary (~${estTok(l1.text)} tokens).\nThe full exchange (~${S.demoStep*60} tokens) has been replaced by this teal card in the memory panel.\n\n${remaining>0?`${remaining} more L1 summary(ies) needed before an L2 meta-summary is created.`:'Next L1 summary will trigger an L2 meta-summary.'}`,
+      `This turn's exchange was compressed into a 1–2 sentence summary (~${estTok(l1.text)} tokens).\nThe full exchange (~${exchangeTok} tokens) has been replaced by this teal card in the memory panel.\n\n${remaining>0?`${remaining} more L1 summary(ies) needed before an L2 meta-summary is created.`:'Next L1 summary will trigger an L2 meta-summary.'}`,
       'hier-event'
     );
   }
