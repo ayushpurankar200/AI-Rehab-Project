@@ -564,11 +564,16 @@ const DEMO_TOKENS = {
 };
 
 // ── Sliding window: scripted summaries used when compression fires ──
+// One entry per compression event (compression fires 6× across the demo,
+// after turns 3-8). Each summary describes the messages actually being
+// compressed, so the panel cards line up with reality.
 const DEMO_SW = [
-  `User plans 10-day Switzerland trip: Zurich, Interlaken, Lucerne. Budget $4,000 (est. spend $2,420–$3,120). Swiss Travel Pass recommended. Interested in hiking and trains.`,
-  `Interlaken hiking options: Harder Kulm (easy), Schynige Platte–First (moderate), Männlichen (hard). Swiss Travel Pass covers most transport; Glacier Express needs $15 reservation. Use Interlaken Ost for mountains.`,
-  `Swiss foods: fondue, raclette, rösti, Zürcher Geschnetzeltes. Migros/Coop much cheaper. Best time: late September — quieter, 20–30% cheaper. Pack waterproof jacket above 2,000m.`,
-  `Hidden gems: Appenzell, Gruyères, Stein am Rhein, Aletsch Glacier — all accessible without a car.`,
+  `User plans 10-day Switzerland trip: Zurich (days 1-2), Interlaken (3-6), Lucerne (7-9). Interested in hiking and trains. Swiss Travel Pass recommended for transport.`,
+  `Budget: $4,000 for 10 days. Estimated spend $2,420–$3,120, leaving $880–$1,580 reserve. Accommodation $90–130/night, Travel Pass ~$420, Jungfraujoch ~$180, Pilatus ~$45.`,
+  `Interlaken hiking options: easy (Harder Kulm 2-3h, Niederhorn 3h), moderate (Schynige Platte–First 4-6h, First Cliff Walk), hard (Männlichen–Kleine Scheidegg 6-8h). Eiger N face views.`,
+  `Swiss Travel Pass covers trains, buses, lake boats, plus 500+ museums. Glacier Express + Bernina Express need ~$15 reservations. Use Interlaken Ost station for mountain trains.`,
+  `Swiss foods: fondue (moitié-moitié style), raclette, rösti, Zürcher Geschnetzeltes, Älplermagronen. Migros/Coop supermarkets are far cheaper than restaurants for prepared meals.`,
+  `For Interlaken hikes: best month is late September (stable, cheaper, fall colors). Altitude 5–15°C above 2,000m, valley 22–28°C in summer. Afternoon thunderstorms — start by 7am.`,
 ];
 let swSumIdx = 0;
 
@@ -608,7 +613,7 @@ const DEMO_L1 = [
 ];
 const DEMO_L2 = [
   'Switzerland 10-day trip: $4,000 budget ($2,420–$3,120 est. spend). Three cities. Swiss Travel Pass essential. Interlaken hiking from easy (Harder Kulm) to hard (Männlichen). Accommodation is the key budget lever.',
-  'Practical info: fondue/raclette/rösti must-try foods; Migros/Coop for budget meals. Best time: September. Always pack waterproof jacket. Hidden gems include Appenzell, Gruyères, and Aletsch Glacier.',
+  'Trains: Swiss Travel Pass covers most transport (Glacier/Bernina need ~$15 reservations, use Interlaken Ost). Foods: fondue/raclette/rösti must-try, Migros/Coop for budget. Hiking weather: late September best month, 5–15°C at altitude, start by 7am for thunderstorms.',
 ];
 
 // Entity type → display colour
